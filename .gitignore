@@ -1,0 +1,11 @@
+.env
+
+# Keep these directories in git while ignoring their runtime contents.
+config/jdownloader/**
+!config/jdownloader/.gitkeep
+
+downloads/**
+!downloads/.gitkeep
+
+watch/**
+!watch/.gitkeep

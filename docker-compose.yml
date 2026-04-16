@@ -1,0 +1,46 @@
+services:
+
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - VPN_SERVICE_PROVIDER=nordvpn
+      - TZ=Europe/Berlin
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=${OPENVPN_USER}
+      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+      - SERVER_COUNTRIES=Switzerland
+
+    ports:
+      - 5800:5800
+    restart: unless-stopped
+
+  jdownloader:
+    image: jlesage/jdownloader-2
+    container_name: jdownloader
+    network_mode: service:gluetun
+    depends_on:
+      - gluetun
+    environment:
+      - USER_ID=1000
+      - GROUP_ID=1000
+      - TZ=Europe/Berlin
+      - EXTRACTION_PASSWORDS=${EXTRACTION_PASSWORDS}
+    volumes:
+      - ./watch:/watch:Z,rw
+      - ./config/jdownloader:/config:Z,rw
+      - ./downloads:/output:Z,rw
+      - ./init-jd-config.sh:/etc/cont-init.d/99-jd-config.sh:Z,ro
+    restart: unless-stopped
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
