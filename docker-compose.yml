@@ -15,7 +15,12 @@ services:
       - OPENVPN_USER=${OPENVPN_USER}
       - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
       - SERVER_COUNTRIES=Switzerland
-
+    healthcheck:
+      test: /gluetun-entrypoint healthcheck
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
     ports:
       - 5800:5800
     restart: unless-stopped
@@ -25,7 +30,8 @@ services:
     container_name: jdownloader
     network_mode: service:gluetun
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
     environment:
       - USER_ID=1000
       - GROUP_ID=1000
