@@ -45,10 +45,4 @@ services:
       - ${DOWNLOADS_PATH}:/output:Z,rw
       - ./init-jd-config.sh:/etc/cont-init.d/99-jd-config.sh:Z,ro
     restart: unless-stopped
-
-networks:
-  default:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/24
+  
