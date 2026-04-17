@@ -10,6 +10,8 @@ WATCH_DIR="/watch"
 APP_UID="${USER_ID:-1000}"
 APP_GID="${GROUP_ID:-1000}"
 
+mkdir -p "$WATCH_DIR"
+
 if [ -d "$WATCH_DIR" ]; then
   if chown -R "$APP_UID:$APP_GID" "$WATCH_DIR" 2>/dev/null; then
     chmod -R u+rwX,g+rwX "$WATCH_DIR" 2>/dev/null || true
