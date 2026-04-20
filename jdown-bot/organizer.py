@@ -6,6 +6,7 @@ from guessit import guessit
 
 PREFIX = "[Organizer]"
 VIDEO_EXTENSIONS = {".mkv", ".mp4", ".avi", ".m4v", ".mov", ".wmv"}
+MEDIA_CONFIDENCE_FIELDS = {"screen_size", "source", "video_codec", "audio_codec"}
 MOVIE_DESTINATION = "/output/done"
 SERIES_DESTINATION = "/output/done"
 
@@ -108,11 +109,20 @@ def _organize_series(src: Path, dest: Path, info: dict):
 def organize(src: Path):
     src = Path(src)
 
+    if not src.is_dir():
+        print(f"{PREFIX} Warning: '{src}' is not a directory, skipping")
+        return
+
     print(f"{PREFIX} Processing '{src.name}'...")
-    cleanup(src)
 
     info = dict(guessit(src.name))
     media_type = info.get("type")
+
+    if not MEDIA_CONFIDENCE_FIELDS.intersection(info):
+        print(f"{PREFIX} '{src.name}' does not look like media, skipping")
+        return
+
+    cleanup(src)
 
     if media_type == "movie":
         _organize_movie(src, Path(MOVIE_DESTINATION), info)
@@ -135,4 +145,3 @@ if __name__ == "__main__":
         print(f"{PREFIX} Error: path argument required", file=sys.stderr)
         sys.exit(1)
     organize(sys.argv[1])
-
