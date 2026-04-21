@@ -1,7 +1,7 @@
 services:
 
   gluetun:
-    image: qmcgaw/gluetun
+    image: qmcgaw/gluetun:latest
     container_name: gluetun
     cap_add:
       - NET_ADMIN
@@ -23,15 +23,16 @@ services:
       retries: 3
     ports:
       - 5800:5800
+      - 3128:3128
     restart: unless-stopped
 
   jdownloader:
-    image: jlesage/jdownloader-2
+    image: jlesage/jdownloader-2:latest
     container_name: jdownloader
     network_mode: service:gluetun
-    depends_on:
-      gluetun:
-        condition: service_healthy
+#    depends_on:
+#      gluetun:
+#        condition: service_healthy
     environment:
       - USER_ID=1000
       - GROUP_ID=1000
@@ -45,11 +46,33 @@ services:
       - WEB_AUTHENTICATION=1
       - WEB_AUTHENTICATION_USERNAME=admin
       - WEB_AUTHENTICATION_PASSWORD=${WEB_AUTHENTICATION_PASSWORD}
+      - PREMIUM_ACCOUNT_HOSTER=${PREMIUM_ACCOUNT_HOSTER}
+      - PREMIUM_ACCOUNT_USERNAME=${PREMIUM_ACCOUNT_USERNAME}
+      - PREMIUM_ACCOUNT_PASSWORD=${PREMIUM_ACCOUNT_PASSWORD}
 
     volumes:
+      - ./api.sh:/api.sh:Z,rw
+      - ./watcher.sh:/watcher.sh:Z,rw
       - ./config/jdownloader:/config:Z,rw
       - ${DOWNLOADS_PATH}:/output:Z,rw
       - ./init-jd-config.sh:/etc/cont-init.d/99-jd-config.sh:Z,ro
+    restart: unless-stopped
+
+  jdown-bot:
+    build: ./jdown-bot
+    container_name: jdown-bot
+    depends_on:
+      - jdownloader
+    environment:
+      - API_BASE_URL=http://gluetun:3128
+      - DEBUG=0
+      - TZ=Europe/Berlin
+      - EXTRACTION_PASSWORDS=${EXTRACTION_PASSWORDS}
+      - PREMIUM_ACCOUNT_HOSTER=${PREMIUM_ACCOUNT_HOSTER}
+      - PREMIUM_ACCOUNT_USERNAME=${PREMIUM_ACCOUNT_USERNAME}
+      - PREMIUM_ACCOUNT_PASSWORD=${PREMIUM_ACCOUNT_PASSWORD}
+    volumes:
+      - ${DOWNLOADS_PATH}:/output:Z,rw
     restart: unless-stopped
 
 networks:
@@ -57,4 +80,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/30
+        - subnet: 172.20.0.0/29
