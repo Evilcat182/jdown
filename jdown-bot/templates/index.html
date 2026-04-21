@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>jdown-bot</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 60px auto; padding: 0 16px; background: #f5f5f5; }
+    h1 { font-size: 1.3rem; margin-bottom: 24px; }
+    .card { background: #fff; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    .label { font-size: 0.95rem; font-weight: 500; cursor: default; }
+    .badge { font-size: 0.8rem; padding: 2px 10px; border-radius: 12px; margin-left: 10px; }
+    .on  { background: #d4edda; color: #155724; }
+    .off { background: #f8d7da; color: #721c24; }
+    button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 18px;
+             font-size: 0.85rem; font-weight: 600; }
+    .btn-disable { background: #dc3545; color: #fff; }
+    .btn-enable  { background: #28a745; color: #fff; }
+  </style>
+</head>
+<body>
+  <h1>jdown-bot</h1>
+
+  <div class="card" id="card-linkgrabber">
+    <span class="label" title="Will automatically start downloading any grabed link">
+      Autostart Downloads
+      <span class="badge" id="badge-linkgrabber"></span>
+    </span>
+    <button id="btn-linkgrabber" onclick="toggle('linkgrabber')"></button>
+  </div>
+
+  <div class="card" id="card-downloads">
+    <span class="label" title="Will cleanup any unnecessary files, rename files and folders and move them to final destination">
+      Auto organize when finished
+      <span class="badge" id="badge-downloads"></span>
+    </span>
+    <button id="btn-downloads" onclick="toggle('downloads')"></button>
+  </div>
+
+  <script>
+    function applyStatus(data) {
+      for (const [key, enabled] of Object.entries(data)) {
+        const badge = document.getElementById('badge-' + key);
+        const btn   = document.getElementById('btn-'   + key);
+        badge.textContent = enabled ? 'ON' : 'OFF';
+        badge.className   = 'badge ' + (enabled ? 'on' : 'off');
+        btn.textContent   = enabled ? 'Disable' : 'Enable';
+        btn.className     = enabled ? 'btn-disable' : 'btn-enable';
+      }
+    }
+    function refresh() {
+      fetch('/api/status').then(r => r.json()).then(applyStatus);
+    }
+    function toggle(watcher) {
+      fetch('/api/toggle/' + watcher, {method: 'POST'})
+        .then(r => r.json()).then(applyStatus);
+    }
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

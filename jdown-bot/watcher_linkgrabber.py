@@ -1,6 +1,7 @@
 import requests
 import json
 import time
+import threading
 from settings import API_BASE_URL, REQUEST_TIMEOUT_SECONDS
 from functions import *
 
@@ -55,32 +56,36 @@ def jdown_download_package(package_uuid: int) -> bool:
     return response_data(res, ctx, False) == ''
 
 
-seen_uuids: set[int] = set()
-# uid -> (last_bytesTotal, last_changed_time, ready_reported)
-pkg_state: dict[int, list] = {}
+def run(enabled: threading.Event):
+    seen_uuids: set[int] = set()
+    # uid -> (last_bytesTotal, last_changed_time, ready_reported)
+    pkg_state: dict[int, list] = {}
 
-while True:
-    _= jdown_wait_ready()
-    packages = jdown_linkgrabber_get_packages()
-    now = time.time()
-    for pkg in packages:
-        uid = pkg.get("uuid")
-        name = pkg.get("name", "?")
-        total = pkg.get("bytesTotal", 0)
-
-        if uid not in seen_uuids:
-            seen_uuids.add(uid)
-            pkg_state[uid] = [total, now, False]
-            print(f"{PREFIX} New Package found: {name}")
+    while True:
+        if not enabled.is_set():
+            time.sleep(1)
             continue
+        _= jdown_wait_ready()
+        packages = jdown_linkgrabber_get_packages()
+        now = time.time()
+        for pkg in packages:
+            uid = pkg.get("uuid")
+            name = pkg.get("name", "?")
+            total = pkg.get("bytesTotal", 0)
 
-        last_total, last_changed, ready = pkg_state[uid]
-        if total != last_total:
-            pkg_state[uid] = [total, now, False]
-        elif not ready and (now - last_changed) >= SETTLE_SECONDS:
-            pkg_state[uid][2] = True
-            print(f"{PREFIX} Package ready: {name} ({total} bytes)")
-            ok = jdown_download_package(uid)
-            print(f"{PREFIX} Download started: {name}" if ok else f"{PREFIX} Failed to start: {name}")
+            if uid not in seen_uuids:
+                seen_uuids.add(uid)
+                pkg_state[uid] = [total, now, False]
+                print(f"{PREFIX} New Package found: {name}")
+                continue
 
-    time.sleep(2)
+            last_total, last_changed, ready = pkg_state[uid]
+            if total != last_total:
+                pkg_state[uid] = [total, now, False]
+            elif not ready and (now - last_changed) >= SETTLE_SECONDS:
+                pkg_state[uid][2] = True
+                print(f"{PREFIX} Package ready: {name} ({total} bytes)")
+                ok = jdown_download_package(uid)
+                print(f"{PREFIX} Download started: {name}" if ok else f"{PREFIX} Failed to start: {name}")
+
+        time.sleep(2)
