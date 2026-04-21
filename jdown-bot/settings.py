@@ -1,7 +1,7 @@
 import os
 
 API_BASE_URL =              os.getenv("API_BASE_URL", "http://gluetun:3128")
-DEBUG =                     False
+DEBUG =                     os.getenv("DEBUG", "0") == "1"
 REQUEST_TIMEOUT_SECONDS =   10
 WAIT_TIMEOUT_SECONDS =      120
 FOLDERWATCH_ID =            "folderwatch"

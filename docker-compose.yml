@@ -65,6 +65,7 @@ services:
       - jdownloader
     environment:
       - API_BASE_URL=http://gluetun:3128
+      - DEBUG=0
       - TZ=Europe/Berlin
       - EXTRACTION_PASSWORDS=${EXTRACTION_PASSWORDS}
       - PREMIUM_ACCOUNT_HOSTER=${PREMIUM_ACCOUNT_HOSTER}
