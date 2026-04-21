@@ -1,7 +1,7 @@
 services:
 
   gluetun:
-    image: qmcgaw/gluetun
+    image: qmcgaw/gluetun:latest
     container_name: gluetun
     cap_add:
       - NET_ADMIN
@@ -27,7 +27,7 @@ services:
     restart: unless-stopped
 
   jdownloader:
-    image: jlesage/jdownloader-2
+    image: jlesage/jdownloader-2:latest
     container_name: jdownloader
     network_mode: service:gluetun
 #    depends_on:

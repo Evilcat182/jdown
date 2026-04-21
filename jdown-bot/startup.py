@@ -120,9 +120,8 @@ def jdown_archivepassword_add(password: str) -> bool:
     return res.status_code == 200
 
 def jdown_premium_account_is_set(hoster: str, username: str) -> bool:
-    debug_log(f"Checking if premium account is configured for hoster='{hoster}' user='{username}'")
     query = {
-        "userName": True,
+        "username": True,
         "enabled": True,
         "valid": True,
         "trafficLeft": False,
@@ -145,8 +144,8 @@ def jdown_premium_account_is_set(hoster: str, username: str) -> bool:
     for account in accounts:
         if not isinstance(account, dict):
             continue
-        account_hoster = account.get("hoster")
-        account_username = account.get("username", account.get("userName"))
+        account_hoster = account.get("hostname")
+        account_username = account.get("infoMap")["username"]
         if account_hoster == hoster and account_username == username:
             return True
     return False
