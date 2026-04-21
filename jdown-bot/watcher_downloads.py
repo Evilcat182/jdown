@@ -2,6 +2,7 @@ import requests
 from pathlib import Path
 import json
 import time
+import threading
 from settings import API_BASE_URL, REQUEST_TIMEOUT_SECONDS
 from functions import *
 from organizer import organize
@@ -86,26 +87,30 @@ def _all_links_finished(package_uuid: int) -> bool:
 
 PREFIX = "[DownloadWatch]"
 
-reported_uuids: set[int] = set()
+def run(enabled: threading.Event):
+    reported_uuids: set[int] = set()
 
-while True:
-    _ = jdown_wait_ready()
-    packages = jdown_downloads_get_packages()
-    for pkg in packages:
-        uid = pkg.get("uuid")
-        name = pkg.get("name", "?")
-        status = pkg.get("status") or ""
-
-        if uid in reported_uuids:
+    while True:
+        if not enabled.is_set():
+            time.sleep(1)
             continue
+        _ = jdown_wait_ready()
+        packages = jdown_downloads_get_packages()
+        for pkg in packages:
+            uid = pkg.get("uuid")
+            name = pkg.get("name", "?")
+            status = pkg.get("status") or ""
 
-        if _is_finished(status) and _all_links_finished(uid):
-            reported_uuids.add(uid)
-            if Path(pkg.get('saveTo')).exists():
-                print(f"{PREFIX} Finished: {name} ({pkg.get('saveTo', '?')})")
-                organize(pkg.get('saveTo'))
+            if uid in reported_uuids:
+                continue
 
-    time.sleep(2)
+            if _is_finished(status) and _all_links_finished(uid):
+                reported_uuids.add(uid)
+                if Path(pkg.get('saveTo')).exists():
+                    print(f"{PREFIX} Finished: {name} ({pkg.get('saveTo', '?')})")
+                    organize(pkg.get('saveTo'))
+
+        time.sleep(2)
 
 #while True:
 #    time.sleep(1)

@@ -61,6 +61,8 @@ services:
     container_name: jdown-bot
     depends_on:
       - jdownloader
+    ports:
+      - 8080:8080
     environment:
       - API_BASE_URL=http://gluetun:3128
       - DEBUG=0
@@ -69,6 +71,8 @@ services:
       - PREMIUM_ACCOUNT_HOSTER=${PREMIUM_ACCOUNT_HOSTER}
       - PREMIUM_ACCOUNT_USERNAME=${PREMIUM_ACCOUNT_USERNAME}
       - PREMIUM_ACCOUNT_PASSWORD=${PREMIUM_ACCOUNT_PASSWORD}
+      - AUTOSTART_DOWNLOADS=1
+      - AUTOORGANIZE_DOWNLOADS=1
     volumes:
       - ${DOWNLOADS_PATH}:/output:z,rw
     restart: unless-stopped
