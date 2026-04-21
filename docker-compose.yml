@@ -51,10 +51,8 @@ services:
       - PREMIUM_ACCOUNT_PASSWORD=${PREMIUM_ACCOUNT_PASSWORD}
 
     volumes:
-      - ./api.sh:/api.sh:Z,rw
-      - ./watcher.sh:/watcher.sh:Z,rw
       - ./config/jdownloader:/config:Z,rw
-      - ${DOWNLOADS_PATH}:/output:Z,rw
+      - ${DOWNLOADS_PATH}:/output:z,rw
       - ./init-jd-config.sh:/etc/cont-init.d/99-jd-config.sh:Z,ro
     restart: unless-stopped
 
@@ -72,7 +70,7 @@ services:
       - PREMIUM_ACCOUNT_USERNAME=${PREMIUM_ACCOUNT_USERNAME}
       - PREMIUM_ACCOUNT_PASSWORD=${PREMIUM_ACCOUNT_PASSWORD}
     volumes:
-      - ${DOWNLOADS_PATH}:/output:Z,rw
+      - ${DOWNLOADS_PATH}:/output:z,rw
     restart: unless-stopped
 
 networks:
