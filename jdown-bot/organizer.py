@@ -3,12 +3,14 @@ import os
 import shutil
 import fnmatch
 from guessit import guessit
+from plex import plex_scan_library
 
 PREFIX = "[Organizer]"
 VIDEO_EXTENSIONS = {".mkv", ".mp4", ".avi", ".m4v", ".mov", ".wmv"}
 MEDIA_CONFIDENCE_FIELDS = {"screen_size", "source", "video_codec", "audio_codec"}
-MOVIE_DESTINATION = "/output/done"
-SERIES_DESTINATION = "/output/done"
+MOVIE_DESTINATION = os.getenv("MOVIE_DESTINATION","/output/done")
+SERIES_DESTINATION = os.getenv("SERIES_DESTINATION","/output/done")
+
 
 cleanup_settings = [
     {
@@ -124,10 +126,15 @@ def organize(src: Path):
 
     cleanup(src)
 
+    import state
     if media_type == "movie":
         _organize_movie(src, Path(MOVIE_DESTINATION), info)
+        if state.plex_scan_enabled.is_set():
+            plex_scan_library("movie")
     elif media_type == "episode":
         _organize_series(src, Path(SERIES_DESTINATION), info)
+        if state.plex_scan_enabled.is_set():
+            plex_scan_library("show")
     else:
         print(f"{PREFIX} Unknown type, skipping")
         return
