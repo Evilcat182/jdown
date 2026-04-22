@@ -38,6 +38,14 @@
     <button id="btn-downloads" onclick="toggle('downloads')"></button>
   </div>
 
+  <div class="card" id="card-plex">
+    <span class="label" title="Triggers a Plex library scan after a download has been organized">
+      Invoke Plex Media Scan after successfull download
+      <span class="badge" id="badge-plex"></span>
+    </span>
+    <button id="btn-plex" onclick="toggle('plex')"></button>
+  </div>
+
   <script>
     function applyStatus(data) {
       for (const [key, enabled] of Object.entries(data)) {

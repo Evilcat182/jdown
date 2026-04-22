@@ -9,3 +9,8 @@ if os.getenv("AUTOSTART_DOWNLOADS", "1") == "1":
 
 if os.getenv("AUTOORGANIZE_DOWNLOADS", "1") == "1":
     downloads_enabled.set()
+
+plex_scan_enabled = threading.Event()
+
+if os.getenv("PLEX_SCAN_ENABLED", "1") == "1":
+    plex_scan_enabled.set()
