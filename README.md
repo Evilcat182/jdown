@@ -10,32 +10,38 @@ This stack runs three services:
 
 Create a .env file next to docker-compose.yml.
 
-Example:
-
 ```env
-OPENVPN_USER=your_nordvpn_username
-OPENVPN_PASSWORD=your_nordvpn_password
-WEB_AUTHENTICATION_PASSWORD=choose_a_strong_password
-DOWNLOADS_PATH=/mnt/folder
-EXTRACTION_PASSWORDS=password1,password2
-PREMIUM_ACCOUNT_HOSTER=rapidgator.net
-PREMIUM_ACCOUNT_USERNAME=your_username
-PREMIUM_ACCOUNT_PASSWORD=your_password
+OPENVPN_USER=
+OPENVPN_PASSWORD=
+WEB_AUTHENTICATION_PASSWORD=
+PREMIUM_ACCOUNT_HOSTER=
+PREMIUM_ACCOUNT_USERNAME=
+PREMIUM_ACCOUNT_PASSWORD=
+EXTRACTION_PASSWORDS=
+MOVIE_DESTINATION=
+SERIES_DESTINATION=
+DOWNLOADS_PATH=
+PLEX_API_ROOT=
+PLEX_TOKEN=
 ```
 
 Required:
 
-- OPENVPN_USER
-- OPENVPN_PASSWORD
-- WEB_AUTHENTICATION_PASSWORD
-- DOWNLOADS_PATH
-- PREMIUM_ACCOUNT_HOSTER
-- PREMIUM_ACCOUNT_USERNAME
-- PREMIUM_ACCOUNT_PASSWORD
+- OPENVPN_USER — NordVPN OpenVPN username
+- OPENVPN_PASSWORD — NordVPN OpenVPN password
+- WEB_AUTHENTICATION_PASSWORD — password for JDownloader web UI
+- DOWNLOADS_PATH — host path where downloads are stored
+- MOVIE_DESTINATION — host path where organized movies are moved
+- SERIES_DESTINATION — host path where organized series are moved
 
 Optional:
 
-- EXTRACTION_PASSWORDS
+- PREMIUM_ACCOUNT_HOSTER — hoster domain, e.g. rapidgator.net
+- PREMIUM_ACCOUNT_USERNAME — premium account username
+- PREMIUM_ACCOUNT_PASSWORD — premium account password
+- EXTRACTION_PASSWORDS — comma-separated list of archive passwords
+- PLEX_API_ROOT — Plex server URL, e.g. http://plex:32400
+- PLEX_TOKEN — Plex authentication token
 
 ## 2. Start the stack
 

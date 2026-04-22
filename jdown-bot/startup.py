@@ -170,8 +170,8 @@ def jdown_premium_account_set(hoster: str, username: str, password: str) -> bool
 def jdown_ensure_premium_account() -> bool:
     debug_log("Ensuring premium account is configured")
     if not PREMIUM_ACCOUNT_HOSTER or not PREMIUM_ACCOUNT_USERNAME or not PREMIUM_ACCOUNT_PASSWORD:
-        error_log("PREMIUM_ACCOUNT env vars are not fully set")
-        return False
+        debug_log("PREMIUM_ACCOUNT env vars not set, skipping")
+        return True
 
     if jdown_premium_account_is_set(PREMIUM_ACCOUNT_HOSTER, PREMIUM_ACCOUNT_USERNAME):
         print(f"Premium account '{PREMIUM_ACCOUNT_USERNAME}' for '{PREMIUM_ACCOUNT_HOSTER}' already configured")
@@ -205,8 +205,7 @@ for pwd in EXTRACTION_PASSWORDS.split(","):
         error_log(f"Failed to add Archive extract Password '{pwd}'")
 
 if not jdown_ensure_premium_account():
-    error_log("Premium account setup failed")
-    sys.exit(1)
+    error_log("Premium account setup failed, continuing anyway")
 
 # SET DeleteArchiveFilesAfterExtractionAction to "Delete files from disk"
 print("Setting config DeleteArchiveFilesAfterExtractionAction to 'Delete files from disk'")
