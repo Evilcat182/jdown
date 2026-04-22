@@ -12,8 +12,6 @@ VIDEO_EXTENSIONS = {".mkv", ".mp4", ".avi", ".m4v", ".mov", ".wmv"}
 MEDIA_CONFIDENCE_FIELDS = {"screen_size", "source", "video_codec", "audio_codec"}
 MOVIE_DESTINATION = os.getenv("MOVIE_DESTINATION", "/output/done")
 SERIES_DESTINATION = os.getenv("SERIES_DESTINATION", "/output/done")
-DELETE_SOURCE = os.getenv("DELETE_SOURCE", "0") == "1"
-
 
 excludes = [
     {
@@ -215,7 +213,7 @@ def organize(src: Path):
         elif media_type == "episode":
             plex_scan_library("show")
 
-    if DELETE_SOURCE:
+    if moved and state.delete_source_enabled.is_set():
         try:
             shutil.rmtree(src)
             print(f"{PREFIX} Removed source '{src.name}'")
