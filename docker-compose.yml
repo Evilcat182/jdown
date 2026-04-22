@@ -76,7 +76,7 @@ services:
       - PLEX_SCAN_ENABLED=1
       - MOVIE_DESTINATION=${MOVIE_DESTINATION}
       - SERIES_DESTINATION=${SERIES_DESTINATION}
-      - PLEX_API_ROOT=http://10.0.0.6:32400
+      - PLEX_API_ROOT=${PLEX_API_ROOT}
       - PLEX_TOKEN=${PLEX_TOKEN}
     volumes:
       - ${DOWNLOADS_PATH}:/output:z,rw
