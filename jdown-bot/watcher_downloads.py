@@ -88,6 +88,7 @@ def _all_links_finished(package_uuid: int) -> bool:
 PREFIX = "[DownloadWatch]"
 
 def run(enabled: threading.Event):
+    print(f"{PREFIX} Starting downloads watcher")
     reported_uuids: set[int] = set()
 
     while True:

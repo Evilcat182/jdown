@@ -57,6 +57,7 @@ def jdown_download_package(package_uuid: int) -> bool:
 
 
 def run(enabled: threading.Event):
+    print(f"{PREFIX} Starting linkgrabber watcher")
     seen_uuids: set[int] = set()
     # uid -> (last_bytesTotal, last_changed_time, ready_reported)
     pkg_state: dict[int, list] = {}
