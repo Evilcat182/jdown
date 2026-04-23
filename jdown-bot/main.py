@@ -12,6 +12,7 @@ if result.returncode != 0:
 import state
 import watcher_linkgrabber
 import watcher_downloads
+import watcher_dialogs
 import settings
 from webui import app
 
@@ -28,6 +29,13 @@ threading.Thread(
     args=(state.downloads_enabled,),
     daemon=True,
     name="watcher-downloads",
+).start()
+
+threading.Thread(
+    target=watcher_dialogs.run,
+    args=(state.dialogs_enabled,),
+    daemon=True,
+    name="watcher-dialogs",
 ).start()
 
 print("Starting web UI on port 8080...")

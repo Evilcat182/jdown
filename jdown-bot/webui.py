@@ -16,6 +16,7 @@ def api_status():
         "downloads":      state.downloads_enabled.is_set(),
         "plex":           state.plex_scan_enabled.is_set(),
         "delete_source":  state.delete_source_enabled.is_set(),
+        "dialogs":        state.dialogs_enabled.is_set(),
     })
 
 
@@ -29,6 +30,8 @@ def api_toggle(watcher: str):
         ev = state.plex_scan_enabled
     elif watcher == "delete_source":
         ev = state.delete_source_enabled
+    elif watcher == "dialogs":
+        ev = state.dialogs_enabled
     else:
         return jsonify({"error": "unknown watcher"}), 404
 
@@ -44,4 +47,5 @@ def api_toggle(watcher: str):
         "downloads":      state.downloads_enabled.is_set(),
         "plex":           state.plex_scan_enabled.is_set(),
         "delete_source":  state.delete_source_enabled.is_set(),
+        "dialogs":        state.dialogs_enabled.is_set(),
     })
