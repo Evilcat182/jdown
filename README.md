@@ -1,10 +1,11 @@
 # JDownloader + VPN + Bot Docker Setup
 
-This stack runs three services:
+This stack provides a fully automated, VPN-routed download pipeline:
 
-- gluetun: VPN gateway and network namespace owner
-- jdownloader: JDownloader UI/API, shares gluetun network stack
-- jdown-bot: Python automation container that configures JDownloader and runs watchers
+- **gluetun** — routes all traffic through a VPN (NordVPN/OpenVPN), acts as the shared network namespace for all services
+- **firefox** — containerized browser with AdBlock and the JDownloader extension pre-installed, so Click & Load works out of the box
+- **jdownloader** — download manager, accessible via web UI, all traffic goes through the VPN
+- **jdown-bot** — Python automation layer that auto-starts downloads, organizes finished files into movie/series destinations, renames them, and triggers a Plex media scan on success
 
 ## 1. Create .env
 
@@ -23,6 +24,8 @@ SERIES_DESTINATION=
 DOWNLOADS_PATH=
 PLEX_API_ROOT=
 PLEX_TOKEN=
+FF_OPEN_URL=
+DEBUG=0
 ```
 
 Required:
@@ -42,6 +45,8 @@ Optional:
 - EXTRACTION_PASSWORDS — comma-separated list of archive passwords
 - PLEX_API_ROOT — Plex server URL, e.g. http://plex:32400
 - PLEX_TOKEN — Plex authentication token
+- FF_OPEN_URL — URL(s) Firefox opens on start; separate multiple with `|`
+- DEBUG — set to `1` to enable verbose debug logging (default: `0`)
 
 ## 2. Start the stack
 
@@ -69,3 +74,29 @@ Login:
 
 - Username: admin
 - Password: value from WEB_AUTHENTICATION_PASSWORD
+
+## 4. Access Firefox
+
+Open:
+
+```text
+http://HOST-IP:5801
+```
+
+The browser has AdBlock and the JDownloader extension pre-installed. Use it to browse download sites — Click & Load will send links directly to JDownloader.
+
+## 5. Access jdown-bot Settings
+
+Open:
+
+```text
+http://HOST-IP:8080
+```
+
+From here you can enable or disable:
+
+- **Autostart Downloads** — automatically start downloading grabbed links
+- **Auto organize when finished** — rename and move completed downloads to their destination
+- **Invoke Plex Media Scan** — trigger a Plex library scan after a successful download
+- **Delete downloaded source** — remove the source folder after a successful copy
+- **Auto-answer Dialogs** — automatically confirm JDownloader dialogs (e.g. external link requests)
