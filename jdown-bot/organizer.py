@@ -122,8 +122,7 @@ def _safe_copy(src: Path, dst: Path) -> bool:
     dst.parent.mkdir(parents=True, exist_ok=True)
     if dst.exists():
         if not _files_differ(src, dst):
-            if DEBUG:
-                print(f"{PREFIX} '{dst.name}' is up to date, skipping")
+            print(f"{COLOR_YELLOW}{PREFIX} '{dst.name}' already exists, skipping{COLOR_RESET}")
             return False
         label = " (updated)"
     else:
