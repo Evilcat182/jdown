@@ -1,10 +1,11 @@
 from pathlib import Path
 import os
+import re
 import shutil
 import fnmatch
 from guessit import guessit
 from plex import plex_scan_library
-from settings import DEBUG
+from settings import DEBUG, COLOR_RESET, COLOR_RED, COLOR_YELLOW, COLOR_GREEN
 import state
 
 PREFIX = "[Organizer]"
@@ -12,6 +13,19 @@ VIDEO_EXTENSIONS = {".mkv", ".mp4", ".avi", ".m4v", ".mov", ".wmv"}
 MEDIA_CONFIDENCE_FIELDS = {"screen_size", "source", "video_codec", "audio_codec"}
 MOVIE_DESTINATION = os.getenv("MOVIE_DESTINATION", "/output/done")
 SERIES_DESTINATION = os.getenv("SERIES_DESTINATION", "/output/done")
+
+movie_settings = {
+    "folder_template_name": "{title} {year_in_brackets}",
+    "file_template_name": "{dotted_title}.{year}.{video_codec}.{screen_size}",
+    "mandatory": ["title","dotted_title","year","video_codec","screen_size"]
+}
+
+series_settings = {
+    "folder_template_name": "{title} {year_in_brackets}",
+    "file_template_name": "{dotted_title}.{season_and_episode}.{dotted_episode_title}.{video_codec}.{screen_size}",
+    "episode_folder_template_name": "{dotted_title}.{season_and_episode}.{dotted_episode_title}.{video_codec}.{screen_size}",
+    "mandatory": ["title","dotted_title","season_and_episode","video_codec","screen_size"]
+}
 
 excludes = [
     {
@@ -46,6 +60,20 @@ excludes = [
     }
 ]
 
+def _guessit(name: str):
+    result = guessit(name)
+    result["dotted_title"] = result["title"].replace(" ",".")
+    if result.get("video_codec"):
+        result["video_codec"] = result["video_codec"].replace(".","")
+    if result.get("screen_size"):
+        result["screen_size"] = result["screen_size"] if result["screen_size"].endswith("p") else f"{result["screen_size"]}p"
+    if result.get("episode_title"):
+        result["dotted_episode_title"] = result["episode_title"].replace(" ",".")
+    if result.get("year"):
+        result["year_in_brackets"] = f"({result["year"]})"
+    if result.get("season") and result.get("episode"):
+        result["season_and_episode"] = f"S{result["season"]:02}E{result["episode"]:02}"
+    return result
 
 def _get_excluded(path: str, settings: list = excludes) -> set:
     """Return a set of paths to exclude from copying based on cleanup settings."""
@@ -125,56 +153,122 @@ def _copy_extras(src: Path, out_dir: Path, excluded: set = None):
         _safe_copy(f, out_dir / f.relative_to(src))
 
 
-def _organize_movie(src: Path, dest: Path, info: dict, excluded: set = None) -> bool:
-    title = info.get("title", src.name)
-    year = info.get("year")
-    screen_size = info.get("screen_size")
+def _check_mandatory(info: dict, mandatory: list) -> list[str]:
+    return [f for f in mandatory if not info.get(f)]
 
-    folder_name = f"{title} ({year})" if year else title
+
+def _render_template(template: str, info: dict, sep: str = ".") -> str:
+    parts = []
+    for seg in template.split(sep):
+        keys = re.findall(r"\{(\w+)\}", seg)
+        if not keys:
+            parts.append(seg)
+        elif all(info.get(k) for k in keys):
+            parts.append(seg.format(**{k: info[k] for k in keys}))
+        # else: optional field missing — skip segment to avoid empty tokens
+    return sep.join(parts)
+
+
+def _write_error(path: Path, missing: list[str]):
+    error_file = path / "ORGANIZER-ERROR.txt"
+    lines = [f"Path: {path.resolve()}\n"]
+    lines += ["The following mandatory fields could not be determined:\n"]
+    lines += [f"  - {f}\n" for f in missing]
+    lines += ["\n"]
+    with error_file.open("a") as fh:
+        fh.writelines(lines)
+    print(f"{COLOR_YELLOW}{PREFIX} Missing mandatory fields {missing}, wrote ORGANIZER-ERROR.txt in '{path}'{COLOR_RESET}")
+
+
+def _organize_movie(src: Path, dest: Path, info: dict, excluded: set = None, error_path: Path = None) -> bool:
+    missing = _check_mandatory(info, movie_settings["mandatory"])
+    if missing:
+        _write_error(error_path or src, missing)
+        return False
+
+    folder_name = _render_template(movie_settings["folder_template_name"], info, sep=" ")
     out_dir = dest / folder_name
 
     moved = False
     for video in _find_videos(src, excluded):
-        parts = [title.replace(" ", ".")]
-        if year:
-            parts.append(str(year))
-        if screen_size:
-            parts.append(screen_size)
-        filename = ".".join(parts) + video.suffix.lower()
+        filename = _render_template(movie_settings["file_template_name"], info, sep=".") + video.suffix.lower()
         if _safe_copy(video, out_dir / filename):
             moved = True
     _copy_extras(src, out_dir, excluded)
     return moved
 
 
-def _organize_series(src: Path, dest: Path, info: dict, excluded: set = None) -> bool:
-    title = info.get("title", src.name)
-    year = info.get("year")
-    folder_name = f"{title} ({year})" if year else title
+def _organize_series(src: Path, dest: Path, info: dict, excluded: set = None, error_path: Path = None) -> bool:
+    # Validate series-level title before doing anything
+    title_missing = _check_mandatory(info, ["title", "dotted_title"])
+    if title_missing:
+        _write_error(error_path or src, title_missing)
+        return False
+
+    folder_name = _render_template(series_settings["folder_template_name"], info, sep=" ")
     out_base = dest / folder_name
 
+    # Pre-flight: validate all videos before copying anything
+    videos = _find_videos(src, excluded)
+    merged_per_video: list[tuple[Path, dict]] = []
+    for video in videos:
+        ep_info = dict(_guessit(video.name))
+        folder_info = dict(_guessit(video.parent.name)) if video.parent != src else {}
+        merged = {**info,
+                  **{k: v for k, v in folder_info.items() if v is not None},
+                  **{k: v for k, v in ep_info.items() if v is not None}}
+        merged["title"] = info["title"]
+        merged["dotted_title"] = info["dotted_title"]
+        missing = _check_mandatory(merged, series_settings["mandatory"])
+        if missing:
+            _write_error(error_path or src, missing)
+            return False
+        merged_per_video.append((video, merged))
+
     moved = False
-    for video in _find_videos(src, excluded):
-        ep_info = dict(guessit(video.name))
-        season = ep_info.get("season", info.get("season", 1))
-        episode = ep_info.get("episode")
-        screen_size = ep_info.get("screen_size", info.get("screen_size"))
+    # Track source episode dir → destination episode dir for extras copying
+    dir_mapping: dict[Path, Path] = {}
+    for video, merged in merged_per_video:
 
+        season = merged.get("season", 1)
         season_dir = out_base / f"Season {season:02d}"
-
-        ep_title = ep_info.get("title", title)
-        parts = [ep_title.replace(" ", ".")]
-        if episode is not None:
-            parts.append(f"S{season:02d}E{episode:02d}")
+        episode_folder_template = series_settings.get("episode_folder_template_name")
+        if episode_folder_template:
+            episode_folder = _render_template(episode_folder_template, merged, sep=".")
+            episode_dir = season_dir / episode_folder
         else:
-            parts.append(f"S{season:02d}")
-        if screen_size:
-            parts.append(screen_size)
-        filename = ".".join(parts) + video.suffix.lower()
+            episode_dir = season_dir
+        filename = _render_template(series_settings["file_template_name"], merged, sep=".") + video.suffix.lower()
 
-        if _safe_copy(video, season_dir / filename):
+        if _safe_copy(video, episode_dir / filename):
             moved = True
-    _copy_extras(src, out_base, excluded)
+
+        # Map the video's source folder to its destination so extras follow
+        dir_mapping[video.parent] = episode_dir
+
+    # Copy extras: walk up each file's parents to find the nearest mapped episode dir;
+    # preserve relative path within it. Files not under any episode dir go to out_base.
+    for f in src.rglob("*"):
+        if not f.is_file():
+            continue
+        if f.suffix.lower() in VIDEO_EXTENSIONS:
+            continue
+        if excluded and _is_excluded(f, excluded):
+            continue
+        mapped_dir = None
+        rel_within = None
+        for parent in [f.parent, *f.parent.parents]:
+            if parent in dir_mapping:
+                mapped_dir = dir_mapping[parent]
+                rel_within = f.relative_to(parent)
+                break
+            if parent == src:
+                break
+        if mapped_dir is not None:
+            _safe_copy(f, mapped_dir / rel_within)
+        else:
+            _safe_copy(f, out_base / f.relative_to(src))
+
     return moved
 
 
@@ -182,16 +276,16 @@ def organize(src: Path):
     src = Path(src)
 
     if not src.is_dir():
-        print(f"{PREFIX} Warning: '{src}' is not a directory, skipping")
+        print(f"{COLOR_YELLOW}{PREFIX} Warning: '{src}' is not a directory, skipping{COLOR_RESET}")
         return
 
     print(f"{PREFIX} Processing '{src.name}'...")
 
-    info = dict(guessit(src.name))
+    info = dict(_guessit(src.name))
     media_type = info.get("type")
 
     if not MEDIA_CONFIDENCE_FIELDS.intersection(info):
-        print(f"{PREFIX} '{src.name}' does not look like media, skipping")
+        print(f"{COLOR_YELLOW}{PREFIX} '{src.name}' does not look like media, skipping{COLOR_RESET}")
         return
 
     excluded = _get_excluded(src)
@@ -199,13 +293,15 @@ def organize(src: Path):
 
     print(f"{PREFIX} Copying files from '{src.name}'...")
     if media_type == "movie":
-        moved = _organize_movie(content_root, Path(MOVIE_DESTINATION), info, excluded)
+        moved = _organize_movie(content_root, Path(MOVIE_DESTINATION), info, excluded, error_path=src)
     elif media_type == "episode":
-        moved = _organize_series(content_root, Path(SERIES_DESTINATION), info, excluded)
+        moved = _organize_series(content_root, Path(SERIES_DESTINATION), info, excluded, error_path=src)
     else:
-        print(f"{PREFIX} Unknown type, skipping")
+        print(f"{COLOR_YELLOW}{PREFIX} Unknown type, skipping{COLOR_RESET}")
         return
-    print(f"{PREFIX} Finished copying '{src.name}'")
+    
+    if moved:
+        print(f"{COLOR_GREEN}{PREFIX} Finished copying '{src.name}'{COLOR_RESET}")
 
     if moved and state.plex_scan_enabled.is_set():
         if media_type == "movie":
@@ -218,4 +314,4 @@ def organize(src: Path):
             shutil.rmtree(src)
             print(f"{PREFIX} Removed source '{src.name}'")
         except Exception as exc:
-            print(f"{PREFIX} Could not remove source '{src.name}': {exc}")
+            print(f"{COLOR_RED}{PREFIX} Could not remove source '{src.name}': {exc}{COLOR_RESET}")
