@@ -46,6 +46,22 @@
     <button id="btn-plex" onclick="toggle('plex')"></button>
   </div>
 
+  <div class="card" id="card-delete_source">
+    <span class="label" title="Will delete extracted source folder from downloads path, if copy was successfull">
+      Delete downloaded source
+      <span class="badge" id="badge-delete_source"></span>
+    </span>
+    <button id="btn-delete_source" onclick="toggle('delete_source')"></button>
+  </div>
+
+  <div class="card" id="card-dialogs">
+    <span class="label" title="Auto-answer JDownloader dialogs (e.g. external link requests)">
+      Auto-answer Dialogs
+      <span class="badge" id="badge-dialogs"></span>
+    </span>
+    <button id="btn-dialogs" onclick="toggle('dialogs')"></button>
+  </div>
+
   <script>
     function applyStatus(data) {
       for (const [key, enabled] of Object.entries(data)) {

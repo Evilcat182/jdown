@@ -1,5 +1,13 @@
 .env
+TODO
 
 # Keep these directories in git while ignoring their runtime contents.
 config/jdownloader/**
 !config/jdownloader/.gitkeep
+config/firefox/**
+!config/firefox/.gitkeep
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

@@ -12,9 +12,11 @@ def index():
 @app.route("/api/status")
 def api_status():
     return jsonify({
-        "linkgrabber": state.linkgrabber_enabled.is_set(),
-        "downloads":   state.downloads_enabled.is_set(),
-        "plex":        state.plex_scan_enabled.is_set(),
+        "linkgrabber":    state.linkgrabber_enabled.is_set(),
+        "downloads":      state.downloads_enabled.is_set(),
+        "plex":           state.plex_scan_enabled.is_set(),
+        "delete_source":  state.delete_source_enabled.is_set(),
+        "dialogs":        state.dialogs_enabled.is_set(),
     })
 
 
@@ -26,6 +28,10 @@ def api_toggle(watcher: str):
         ev = state.downloads_enabled
     elif watcher == "plex":
         ev = state.plex_scan_enabled
+    elif watcher == "delete_source":
+        ev = state.delete_source_enabled
+    elif watcher == "dialogs":
+        ev = state.dialogs_enabled
     else:
         return jsonify({"error": "unknown watcher"}), 404
 
@@ -37,7 +43,9 @@ def api_toggle(watcher: str):
         print(f"[WebUI] {watcher} enabled")
 
     return jsonify({
-        "linkgrabber": state.linkgrabber_enabled.is_set(),
-        "downloads":   state.downloads_enabled.is_set(),
-        "plex":        state.plex_scan_enabled.is_set(),
+        "linkgrabber":    state.linkgrabber_enabled.is_set(),
+        "downloads":      state.downloads_enabled.is_set(),
+        "plex":           state.plex_scan_enabled.is_set(),
+        "delete_source":  state.delete_source_enabled.is_set(),
+        "dialogs":        state.dialogs_enabled.is_set(),
     })

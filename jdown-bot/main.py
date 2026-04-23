@@ -12,6 +12,8 @@ if result.returncode != 0:
 import state
 import watcher_linkgrabber
 import watcher_downloads
+import watcher_dialogs
+import settings
 from webui import app
 
 print("Starting watchers...")
@@ -29,5 +31,16 @@ threading.Thread(
     name="watcher-downloads",
 ).start()
 
+threading.Thread(
+    target=watcher_dialogs.run,
+    args=(state.dialogs_enabled,),
+    daemon=True,
+    name="watcher-dialogs",
+).start()
+
 print("Starting web UI on port 8080...")
-app.run(host="0.0.0.0", port=8080)
+if settings.DEBUG:
+    app.run(host="0.0.0.0", port=8080, debug=True)
+else:
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=8080)

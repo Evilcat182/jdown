@@ -5,45 +5,6 @@ import json
 from settings import *
 from functions import *
 
-def jdown_extension_is_installed(extension_id: str) -> bool:
-    debug_log(f"Checking if extension '{extension_id}' is installed")
-    try:
-        res = requests.get(
-            f"{API_BASE_URL}/extensions/isInstalled",
-            params={"": extension_id},
-            timeout=REQUEST_TIMEOUT_SECONDS
-        )
-    except requests.RequestException as exc:
-        error_log(f"Could not check extension install state '{extension_id}': {exc}")
-        return False
-    return bool(response_data(res, "extensions/isInstalled", False))
-
-def jdown_extension_install(extension_id: str) -> bool:
-    debug_log(f"Installing extension '{extension_id}'")
-    try:
-        res = requests.post(
-            f"{API_BASE_URL}/extensions/install",
-            params={"": extension_id},
-            timeout=REQUEST_TIMEOUT_SECONDS
-        )
-    except requests.RequestException as exc:
-        error_log(f"Could not install extension '{extension_id}': {exc}")
-        return False
-    return bool(response_data(res, "extensions/install", False))
-
-def jdown_extension_is_enabled(extension_id: str) -> bool:
-    debug_log(f"Checking if extension '{extension_id}' is enabled")
-    try:
-        res = requests.get(
-            f"{API_BASE_URL}/extensions/isEnabled",
-            params={"": extension_id},
-            timeout=REQUEST_TIMEOUT_SECONDS
-        )
-    except requests.RequestException as exc:
-        error_log(f"Could not check extension enable state '{extension_id}': {exc}")
-        return False
-    return bool(response_data(res, "extensions/isEnabled", False))
-
 def jdown_get_dialog() -> list:
     debug_log("Querying pending dialogs")
     try:
@@ -69,22 +30,6 @@ def jdown_wait_for_dialog(timeout_seconds: int = WAIT_TIMEOUT_SECONDS) -> list:
             error_log("Timeout while waiting for install dialog")
             return []
         time.sleep(1)
-
-def jdown_extension_enable(extension_id: str) -> bool:
-    debug_log(f"Enabling extension '{extension_id}'")
-    try:
-        res = requests.post(
-            f"{API_BASE_URL}/extensions/setEnabled",
-            params=[
-                ("", extension_id),
-                ("", "true")
-            ],
-            timeout=REQUEST_TIMEOUT_SECONDS
-        )
-    except requests.RequestException as exc:
-        error_log(f"Could not enable extension '{extension_id}': {exc}")
-        return False
-    return bool(response_data(res, "extensions/setEnabled", False))
 
 def jdown_config_set(interface_name: str, storage: str, key: str, value: object) -> bool:
     debug_log(
@@ -170,8 +115,8 @@ def jdown_premium_account_set(hoster: str, username: str, password: str) -> bool
 def jdown_ensure_premium_account() -> bool:
     debug_log("Ensuring premium account is configured")
     if not PREMIUM_ACCOUNT_HOSTER or not PREMIUM_ACCOUNT_USERNAME or not PREMIUM_ACCOUNT_PASSWORD:
-        error_log("PREMIUM_ACCOUNT env vars are not fully set")
-        return False
+        debug_log("PREMIUM_ACCOUNT env vars not set, skipping")
+        return True
 
     if jdown_premium_account_is_set(PREMIUM_ACCOUNT_HOSTER, PREMIUM_ACCOUNT_USERNAME):
         print(f"Premium account '{PREMIUM_ACCOUNT_USERNAME}' for '{PREMIUM_ACCOUNT_HOSTER}' already configured")
@@ -205,8 +150,7 @@ for pwd in EXTRACTION_PASSWORDS.split(","):
         error_log(f"Failed to add Archive extract Password '{pwd}'")
 
 if not jdown_ensure_premium_account():
-    error_log("Premium account setup failed")
-    sys.exit(1)
+    error_log("Premium account setup failed, continuing anyway")
 
 # SET DeleteArchiveFilesAfterExtractionAction to "Delete files from disk"
 print("Setting config DeleteArchiveFilesAfterExtractionAction to 'Delete files from disk'")
@@ -229,45 +173,5 @@ if not jdown_config_set(
 ):
     error_log("Failed to set IfFileExistsAction")
     sys.exit(1)
-
-if jdown_extension_is_installed(f"{FOLDERWATCH_ID}"):
-    print(f"Extension '{FOLDERWATCH_ID}' already installed")
-else:
-    print(f"Installing Extension '{FOLDERWATCH_ID}'")
-    if not jdown_extension_install(f"{FOLDERWATCH_ID}"):
-        error_log(f"Failed initial install call for extension '{FOLDERWATCH_ID}'")
-        sys.exit(1)
-    if not jdown_wait_for_dialog(10):
-        error_log("Install dialog did not appear")
-        sys.exit(1)
-    if not jdown_extension_install(f"{FOLDERWATCH_ID}"):
-        error_log(f"Failed confirmation install call for extension '{FOLDERWATCH_ID}'")
-        sys.exit(1)
-    if not jdown_wait_not_ready():
-        error_log("JDownloader did not restart after extension install")
-        sys.exit(1)
-    if not jdown_wait_ready():
-        error_log("JDownloader did not come back after extension install")
-        sys.exit(1)
-    time.sleep(5)
-    debug_log("Waited extra 5s after extension installation")
-
-print(f"Set FolderWatch Folder to '{FOLDERWATCH_FOLDER}'")
-if not jdown_config_set(
-    "org.jdownloader.extensions.folderwatchV2.FolderWatchConfig",
-    "cfg/org.jdownloader.extensions.folderwatchV2.FolderWatchExtension",
-    "Folders",
-    f"{FOLDERWATCH_FOLDER}"
-):
-    error_log("Failed to set FolderWatch folders")
-    sys.exit(1)
-
-if jdown_extension_is_enabled(f"{FOLDERWATCH_ID}"):
-    print(f"Extension '{FOLDERWATCH_ID}' already enabled")
-else:
-    print(f"Enable Extension '{FOLDERWATCH_ID}'")
-    if not jdown_extension_enable(f"{FOLDERWATCH_ID}"):
-        error_log(f"Failed to enable extension '{FOLDERWATCH_ID}'")
-        sys.exit(1)
 
 debug_log("startup.py finished successfully")

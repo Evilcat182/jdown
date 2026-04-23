@@ -7,6 +7,8 @@ REQUEST_TIMEOUT_SECONDS = 10
 PLEX_MOVIE_LIB_NAME = os.getenv("PLEX_MOVIE_LIB_NAME","")
 PLEX_SHOW_LIB_NAME = os.getenv("PLEX_SHOW_LIB_NAME","")
 
+def plex_check():
+    return bool(PLEX_TOKEN and PLEX_API_ROOT)
 
 def plex_library_get_all():
     HEADERS = {
@@ -47,8 +49,11 @@ def plex_library_get_id(lib_type: str, library_names: list[str] = None):
         return None
     return matches[0]
 
-
 def plex_scan_library(lib_type: str):
+    if not plex_check():
+        print(f"{PREFIX} WARNING: PLEX_TOKEN or PLEX_API_ROOT env var not set ... Skipping Plex scan")
+        return
+
     HEADERS = {
         "X-Plex-Token": PLEX_TOKEN,
         "Accept": "application/json",
