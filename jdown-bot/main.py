@@ -1,7 +1,8 @@
 import subprocess
 import sys
 import threading
-from functions import log
+
+from core import log
 
 # Run startup.py first (blocks until done)
 log("Running startup.py...")
@@ -11,29 +12,27 @@ if result.returncode != 0:
 
 # Import after startup so JDownloader is ready
 import state
-import watcher_linkgrabber
-import watcher_downloads
-import watcher_dialogs
 import settings
-from webui import app
+from watchers import dialogs, downloads, linkgrabber
+from web import app
 
 log("Starting watchers...")
 threading.Thread(
-    target=watcher_linkgrabber.run,
+    target=linkgrabber.run,
     args=(state.linkgrabber_enabled,),
     daemon=True,
     name="watcher-linkgrabber",
 ).start()
 
 threading.Thread(
-    target=watcher_downloads.run,
+    target=downloads.run,
     args=(state.downloads_enabled,),
     daemon=True,
     name="watcher-downloads",
 ).start()
 
 threading.Thread(
-    target=watcher_dialogs.run,
+    target=dialogs.run,
     args=(state.dialogs_enabled,),
     daemon=True,
     name="watcher-dialogs",

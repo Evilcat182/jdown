@@ -2,8 +2,9 @@ import time
 import threading
 import requests
 import json
+
 from settings import API_BASE_URL, REQUEST_TIMEOUT_SECONDS
-from functions import log, response_data
+from core import log, response_data
 
 PREFIX = "[DialogHandler]"
 
@@ -24,7 +25,7 @@ def jdown_list_dialogs() -> list[int]:
     try:
         res = requests.post(
             f"{API_BASE_URL}/dialogs/list",
-            timeout=REQUEST_TIMEOUT_SECONDS
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
         log(f"While listing dialogs: {exc}", PREFIX, "error")
@@ -39,7 +40,7 @@ def jdown_get_dialog(dialog_id: int) -> dict | None:
         res = requests.post(
             f"{API_BASE_URL}/dialogs/get",
             params={"id": dialog_id, "icon": "false", "properties": "true"},
-            timeout=REQUEST_TIMEOUT_SECONDS
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
         log(f"While getting dialog {dialog_id}: {exc}", PREFIX, "error")
@@ -53,7 +54,7 @@ def jdown_get_dialog_type_info(dialog_type: str) -> dict | None:
         res = requests.post(
             f"{API_BASE_URL}/dialogs/getTypeInfo",
             params={"dialogType": dialog_type},
-            timeout=REQUEST_TIMEOUT_SECONDS
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
         log(f"While getting type info: {exc}", PREFIX, "error")
@@ -67,7 +68,7 @@ def jdown_answer_dialog(dialog_id: int, data: dict, dialog_type: str = "") -> bo
         res = requests.post(
             f"{API_BASE_URL}/dialogs/answer",
             params={"id": dialog_id, "data": json.dumps(data)},
-            timeout=REQUEST_TIMEOUT_SECONDS
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
         log(f"While answering dialog {dialog_id}: {exc}", PREFIX, "error")
@@ -108,5 +109,5 @@ def run(enabled: threading.Event = None):
         try:
             handle_dialogs()
         except Exception as exc:
-            log(f"{PREFIX} Unexpected error: {exc}", type="error")
+            log(f"Unexpected error: {exc}", PREFIX, "error")
         time.sleep(POLL_INTERVAL)

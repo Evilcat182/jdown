@@ -2,8 +2,13 @@ import requests
 import time
 import sys
 import json
-from settings import *
-from functions import *
+
+from settings import (
+    API_BASE_URL, REQUEST_TIMEOUT_SECONDS, WAIT_TIMEOUT_SECONDS,
+    EXTRACTION_PASSWORDS, PREMIUM_ACCOUNT_HOSTER, PREMIUM_ACCOUNT_USERNAME,
+    PREMIUM_ACCOUNT_PASSWORD, DEBUG,
+)
+from core import log, response_data, jdown_wait_ready
 
 def jdown_get_dialog() -> list:
     log("Querying pending dialogs", type="debug")

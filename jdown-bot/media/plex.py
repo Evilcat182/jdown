@@ -1,25 +1,29 @@
-import requests, os
-from functions import log
+import requests
+import os
+
+from core import log
 
 PREFIX = "[PLEX-API]"
-PLEX_TOKEN = os.getenv("PLEX_TOKEN","")
-PLEX_API_ROOT = os.getenv("PLEX_API_ROOT","")
+PLEX_TOKEN = os.getenv("PLEX_TOKEN", "")
+PLEX_API_ROOT = os.getenv("PLEX_API_ROOT", "")
 REQUEST_TIMEOUT_SECONDS = 10
-PLEX_MOVIE_LIB_NAME = os.getenv("PLEX_MOVIE_LIB_NAME","")
-PLEX_SHOW_LIB_NAME = os.getenv("PLEX_SHOW_LIB_NAME","")
+PLEX_MOVIE_LIB_NAME = os.getenv("PLEX_MOVIE_LIB_NAME", "")
+PLEX_SHOW_LIB_NAME = os.getenv("PLEX_SHOW_LIB_NAME", "")
+
 
 def plex_check():
     return bool(PLEX_TOKEN and PLEX_API_ROOT)
 
+
 def plex_library_get_all():
-    HEADERS = {
+    headers = {
         "X-Plex-Token": PLEX_TOKEN,
         "Accept": "application/json",
     }
     try:
         res = requests.get(
             f"{PLEX_API_ROOT}/library/sections",
-            headers=HEADERS,
+            headers=headers,
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
         res.raise_for_status()
@@ -33,6 +37,7 @@ def plex_library_get_all():
         log(f"Request to Plex timed out after {REQUEST_TIMEOUT_SECONDS}s.", PREFIX, "error")
         return []
     return res.json()["MediaContainer"]["Directory"]
+
 
 def plex_library_get_id(lib_type: str, library_names: list[str] = None):
     guess_names = {
@@ -50,18 +55,19 @@ def plex_library_get_id(lib_type: str, library_names: list[str] = None):
         return None
     return matches[0]
 
+
 def plex_scan_library(lib_type: str):
     if not plex_check():
-        log(f"PLEX_TOKEN or PLEX_API_ROOT env var not set ... Skipping Plex scan", PREFIX, "warning")
+        log("PLEX_TOKEN or PLEX_API_ROOT env var not set ... Skipping Plex scan", PREFIX, "warning")
         return
 
-    HEADERS = {
+    headers = {
         "X-Plex-Token": PLEX_TOKEN,
         "Accept": "application/json",
     }
     library_names = {
         "movie": [PLEX_MOVIE_LIB_NAME] if PLEX_MOVIE_LIB_NAME else None,
-        "show": [PLEX_SHOW_LIB_NAME] if PLEX_SHOW_LIB_NAME else None,
+        "show":  [PLEX_SHOW_LIB_NAME]  if PLEX_SHOW_LIB_NAME  else None,
     }
     section_id = plex_library_get_id(lib_type, library_names[lib_type])
     if section_id is None:
@@ -70,7 +76,7 @@ def plex_scan_library(lib_type: str):
     try:
         res = requests.get(
             f"{PLEX_API_ROOT}/library/sections/{section_id}/refresh",
-            headers=HEADERS,
+            headers=headers,
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
         res.raise_for_status()

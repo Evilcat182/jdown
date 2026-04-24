@@ -3,9 +3,10 @@ import os
 import re
 import shutil
 import fnmatch
+
 from guessit import guessit
-from plex import plex_scan_library
-from functions import log
+from core import log
+from .plex import plex_scan_library
 import state
 
 PREFIX = "[Organizer]"
@@ -17,68 +18,42 @@ SERIES_DESTINATION = os.getenv("SERIES_DESTINATION", "/output/done")
 movie_settings = {
     "folder_template_name": "{title} {year_in_brackets}",
     "file_template_name": "{dotted_title}.{year}.{video_codec}.{screen_size}",
-    "mandatory": ["title","dotted_title","year","video_codec","screen_size"]
+    "mandatory": ["title", "dotted_title", "year", "video_codec", "screen_size"],
 }
 
 series_settings = {
     "folder_template_name": "{title} {year_in_brackets}",
     "file_template_name": "{dotted_title}.{season_and_episode}.{dotted_episode_title}.{video_codec}.{screen_size}",
     "episode_folder_template_name": "{dotted_title}.{season_and_episode}.{dotted_episode_title}.{video_codec}.{screen_size}",
-    "mandatory": ["title","dotted_title","season_and_episode","video_codec","screen_size"]
+    "mandatory": ["title", "dotted_title", "season_and_episode", "video_codec", "screen_size"],
 }
 
 excludes = [
-    {
-        "Pattern": "*.nfo",
-        "Dir": False,
-        "CS": False
-    },
-    {
-        "Pattern": "*.jpg",
-        "Dir": False,
-        "CS": False
-    },
-    {
-        "Pattern": "*.txt",
-        "Dir": False,
-        "CS": False
-    },
-    {
-        "Pattern": "*.url",
-        "Dir": False,
-        "CS": False
-    },
-    {
-        "Pattern": "*.iso",
-        "Dir": False,
-        "CS": False
-    },
-    {
-        "Pattern": "proof",
-        "Dir": True,
-        "CS": False
-    },
-    {
-        "Pattern": "sample",
-        "Dir": True,
-        "CS": False
-    }
+    {"Pattern": "*.nfo",  "Dir": False, "CS": False},
+    {"Pattern": "*.jpg",  "Dir": False, "CS": False},
+    {"Pattern": "*.txt",  "Dir": False, "CS": False},
+    {"Pattern": "*.url",  "Dir": False, "CS": False},
+    {"Pattern": "*.iso",  "Dir": False, "CS": False},
+    {"Pattern": "proof",  "Dir": True,  "CS": False},
+    {"Pattern": "sample", "Dir": True,  "CS": False},
 ]
+
 
 def _guessit(name: str):
     result = guessit(name)
-    result["dotted_title"] = result["title"].replace(" ",".")
+    result["dotted_title"] = result["title"].replace(" ", ".")
     if result.get("video_codec"):
-        result["video_codec"] = result["video_codec"].replace(".","")
+        result["video_codec"] = result["video_codec"].replace(".", "")
     if result.get("screen_size"):
-        result["screen_size"] = result["screen_size"] if result["screen_size"].endswith("p") else f"{result["screen_size"]}p"
+        result["screen_size"] = result["screen_size"] if result["screen_size"].endswith("p") else f"{result['screen_size']}p"
     if result.get("episode_title"):
-        result["dotted_episode_title"] = result["episode_title"].replace(" ",".")
+        result["dotted_episode_title"] = result["episode_title"].replace(" ", ".")
     if result.get("year"):
-        result["year_in_brackets"] = f"({result["year"]})"
+        result["year_in_brackets"] = f"({result['year']})"
     if result.get("season") and result.get("episode"):
-        result["season_and_episode"] = f"S{result["season"]:02}E{result["episode"]:02}"
+        result["season_and_episode"] = f"S{result['season']:02}E{result['episode']:02}"
     return result
+
 
 def _get_excluded(path: str, settings: list = excludes) -> set:
     """Return a set of paths to exclude from copying based on cleanup settings."""
@@ -235,9 +210,11 @@ def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excl
     for video in videos:
         ep_info = dict(_guessit(video.name))
         folder_info = dict(_guessit(video.parent.name)) if video.parent != src else {}
-        merged = {**info,
-                  **{k: v for k, v in folder_info.items() if v is not None},
-                  **{k: v for k, v in ep_info.items() if v is not None}}
+        merged = {
+            **info,
+            **{k: v for k, v in folder_info.items() if v is not None},
+            **{k: v for k, v in ep_info.items() if v is not None},
+        }
         merged["title"] = info["title"]
         merged["dotted_title"] = info["dotted_title"]
         missing = _check_mandatory(merged, series_settings["mandatory"])
