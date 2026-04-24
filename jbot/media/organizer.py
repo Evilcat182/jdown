@@ -290,13 +290,13 @@ def organize(src: Path):
     if moved:
         log(f"Finished copying '{src.name}'", PREFIX, "success")
 
-    if moved and state.plex_scan_enabled.is_set():
+    if moved and state.get_event("plex").is_set():
         if media_type == "movie":
             plex_scan_library("movie")
         elif media_type == "episode":
             plex_scan_library("show")
 
-    if moved and state.delete_source_enabled.is_set():
+    if moved and state.get_event("delete_source").is_set():
         try:
             shutil.rmtree(src)
             log(f"Removed source '{src.name}'", PREFIX)

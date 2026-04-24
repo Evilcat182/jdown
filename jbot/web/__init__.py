@@ -17,25 +17,12 @@ def index():
 
 @app.route("/api/status")
 def api_status():
-    return jsonify({
-        "linkgrabber":   state.linkgrabber_enabled.is_set(),
-        "downloads":     state.downloads_enabled.is_set(),
-        "plex":          state.plex_scan_enabled.is_set(),
-        "delete_source": state.delete_source_enabled.is_set(),
-        "dialogs":       state.dialogs_enabled.is_set(),
-    })
+    return jsonify(state.get_state())
 
 
 @app.route("/api/toggle/<watcher>", methods=["POST"])
 def api_toggle(watcher: str):
-    mapping = {
-        "linkgrabber":   state.linkgrabber_enabled,
-        "downloads":     state.downloads_enabled,
-        "plex":          state.plex_scan_enabled,
-        "delete_source": state.delete_source_enabled,
-        "dialogs":       state.dialogs_enabled,
-    }
-    ev = mapping.get(watcher)
+    ev = state.get_event(watcher)
     if ev is None:
         return jsonify({"error": "unknown watcher"}), 404
 
@@ -46,13 +33,8 @@ def api_toggle(watcher: str):
         ev.set()
         log(f"{watcher} enabled", PREFIX)
 
-    return jsonify({
-        "linkgrabber":   state.linkgrabber_enabled.is_set(),
-        "downloads":     state.downloads_enabled.is_set(),
-        "plex":          state.plex_scan_enabled.is_set(),
-        "delete_source": state.delete_source_enabled.is_set(),
-        "dialogs":       state.dialogs_enabled.is_set(),
-    })
+    state.save_state()
+    return jsonify(state.get_state())
 
 
 @app.route("/api/logs")

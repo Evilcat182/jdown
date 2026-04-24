@@ -21,7 +21,7 @@ if [ -n "$COMPOSE" ]; then
 fi
 
 # Delete all contents of config dirs except .gitkeep
-for DIR in config/jdownloader config/firefox; do
+for DIR in config/jdownloader config/firefox config/jbot; do
     if [ -d "$DIR" ]; then
         echo "reset: clearing $DIR (keeping .gitkeep)..."
         find "$DIR" -mindepth 1 -not -name ".gitkeep" -delete 2>/dev/null || true

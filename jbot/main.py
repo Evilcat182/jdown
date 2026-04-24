@@ -19,21 +19,21 @@ from web import app
 log("Starting watchers...")
 threading.Thread(
     target=linkgrabber.run,
-    args=(state.linkgrabber_enabled,),
+    args=(state.get_event("linkgrabber"),),
     daemon=True,
     name="watcher-linkgrabber",
 ).start()
 
 threading.Thread(
     target=downloads.run,
-    args=(state.downloads_enabled,),
+    args=(state.get_event("downloads"),),
     daemon=True,
     name="watcher-downloads",
 ).start()
 
 threading.Thread(
     target=dialogs.run,
-    args=(state.dialogs_enabled,),
+    args=(state.get_event("dialogs"),),
     daemon=True,
     name="watcher-dialogs",
 ).start()
