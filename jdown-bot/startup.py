@@ -148,7 +148,7 @@ for pwd in EXTRACTION_PASSWORDS.split(","):
     if jdown_archivepassword_add(pwd):
         log(f"Added Archive extract Password '{pwd}'")
     else:
-        log(f"Failed to add Archive extract Password '{pwd}'", type="error"))
+        log(f"Failed to add Archive extract Password '{pwd}'", type="error")
 
 if not jdown_ensure_premium_account():
     log("Premium account setup failed, continuing anyway", type="error")

@@ -3,7 +3,7 @@ import os
 import re
 import shutil
 import fnmatch
-from guessit import guessitk
+from guessit import guessit
 from plex import plex_scan_library
 from functions import log
 import state
