@@ -49,6 +49,11 @@ excludes = [
         "CS": False
     },
     {
+        "Pattern": "*.iso",
+        "Dir": False,
+        "CS": False
+    },
+    {
         "Pattern": "proof",
         "Dir": True,
         "CS": False
@@ -315,6 +320,14 @@ def organize(src: Path):
 
     excluded = _get_excluded(src)
     content_root = _resolve_content_root(src)
+
+    if not _find_videos(content_root, excluded):
+        error_file = src / "ORGANIZER-ERROR.txt"
+        with error_file.open("a") as fh:
+            fh.write(f"Path: {src.resolve()}\n")
+            fh.write("No video files found.\n\n")
+        warning_log(f"No video files found in '{src.name}', skipping", PREFIX)
+        return
 
     log(f"Copying files from '{src.name}'...", PREFIX)
     if media_type == "movie":
