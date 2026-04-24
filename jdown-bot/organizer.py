@@ -3,9 +3,9 @@ import os
 import re
 import shutil
 import fnmatch
-from guessit import guessit
+from guessit import guessitk
 from plex import plex_scan_library
-from functions import log, debug_log, warning_log, error_log
+from functions import log
 import state
 
 PREFIX = "[Organizer]"
@@ -96,7 +96,7 @@ def _get_excluded(path: str, settings: list = excludes) -> set:
             if entry.is_dir() != match_dirs:
                 continue
             excluded.add(entry)
-            debug_log(f"Excluding '{entry}' from copy", PREFIX)
+            log(f"Excluding '{entry}' from copy", PREFIX, "debug")
     return excluded
 
 
@@ -126,7 +126,7 @@ def _safe_copy(src: Path, dst: Path) -> bool:
     dst.parent.mkdir(parents=True, exist_ok=True)
     if dst.exists():
         if not _files_differ(src, dst):
-            warning_log(f"'{dst.name}' already exists, skipping", PREFIX)
+            log(f"'{dst.name}' already exists, skipping", PREFIX, "warning")
             return False
         label = " (updated)"
     else:
@@ -190,7 +190,7 @@ def _organize_movie(src: Path, dest: Path, info: dict, videos: list[Path], exclu
         lines += [f"  - {v.name}\n" for v in videos]
         lines += ["Nothing was copied. Please verify the content and organize manually.\n"]
         _write_error(ep, lines)
-        warning_log(f"Multiple video files found in '{ep.name}', skipping", PREFIX)
+        log(f"Multiple video files found in '{ep.name}', skipping", PREFIX, "warning")
         return False
 
     missing = _check_mandatory(info, movie_settings["mandatory"])
@@ -199,11 +199,11 @@ def _organize_movie(src: Path, dest: Path, info: dict, videos: list[Path], exclu
         merged = {**info, **{k: v for k, v in video_info.items() if v is not None and not info.get(k)}}
         missing = _check_mandatory(merged, movie_settings["mandatory"])
         if not missing:
-            debug_log(f"Filled missing fields from video filename '{videos[0].name}'", PREFIX)
+            log(f"Filled missing fields from video filename '{videos[0].name}'", PREFIX, "debug")
             info = merged
         else:
             _write_error(ep, ["The following mandatory fields could not be determined:\n"] + [f"  - {f}\n" for f in missing])
-            warning_log(f"Missing mandatory fields {missing} in '{ep.name}', skipping", PREFIX)
+            log(f"Missing mandatory fields {missing} in '{ep.name}', skipping", PREFIX, "warning")
             return False
 
     folder_name = _render_template(movie_settings["folder_template_name"], info, sep=" ")
@@ -224,7 +224,7 @@ def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excl
     title_missing = _check_mandatory(info, ["title", "dotted_title"])
     if title_missing:
         _write_error(ep, ["The following mandatory fields could not be determined:\n"] + [f"  - {f}\n" for f in title_missing])
-        warning_log(f"Missing mandatory fields {title_missing} in '{ep.name}', skipping", PREFIX)
+        log(f"Missing mandatory fields {title_missing} in '{ep.name}', skipping", PREFIX, "warning")
         return False
 
     folder_name = _render_template(series_settings["folder_template_name"], info, sep=" ")
@@ -243,7 +243,7 @@ def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excl
         missing = _check_mandatory(merged, series_settings["mandatory"])
         if missing:
             _write_error(ep, ["The following mandatory fields could not be determined:\n"] + [f"  - {f}\n" for f in missing])
-            warning_log(f"Missing mandatory fields {missing} in '{ep.name}', skipping", PREFIX)
+            log(f"Missing mandatory fields {missing} in '{ep.name}', skipping", PREFIX, "warning")
             return False
         merged_per_video.append((video, merged))
 
@@ -279,7 +279,7 @@ def organize(src: Path):
     src = Path(src)
 
     if not src.is_dir():
-        warning_log(f"'{src}' is not a directory, skipping", PREFIX)
+        log(f"'{src}' is not a directory, skipping", PREFIX, "warning")
         return
 
     log(f"Processing '{src.name}'...", PREFIX)
@@ -288,7 +288,7 @@ def organize(src: Path):
     media_type = info.get("type")
 
     if not MEDIA_CONFIDENCE_FIELDS.intersection(info):
-        warning_log(f"'{src.name}' does not look like media, skipping", PREFIX)
+        log(f"'{src.name}' does not look like media, skipping", PREFIX, "warning")
         return
 
     excluded = _get_excluded(src)
@@ -297,7 +297,7 @@ def organize(src: Path):
 
     if not videos:
         _write_error(src, ["No video files found.\n"])
-        warning_log(f"No video files found in '{src.name}', skipping", PREFIX)
+        log(f"No video files found in '{src.name}', skipping", PREFIX, "warning")
         return
 
     log(f"Copying files from '{src.name}'...", PREFIX)
@@ -306,11 +306,11 @@ def organize(src: Path):
     elif media_type == "episode":
         moved = _organize_series(content_root, Path(SERIES_DESTINATION), info, videos, excluded, error_path=src)
     else:
-        warning_log(f"'{src.name}' has unknown media type '{media_type}', skipping", PREFIX)
+        log(f"'{src.name}' has unknown media type '{media_type}', skipping", PREFIX, "warning")
         return
 
     if moved:
-        log(f"Finished copying '{src.name}'", PREFIX)
+        log(f"Finished copying '{src.name}'", PREFIX, "success")
 
     if moved and state.plex_scan_enabled.is_set():
         if media_type == "movie":
@@ -323,4 +323,4 @@ def organize(src: Path):
             shutil.rmtree(src)
             log(f"Removed source '{src.name}'", PREFIX)
         except Exception as exc:
-            error_log(f"Could not remove source '{src.name}': {exc}", PREFIX)
+            log(f"Could not remove source '{src.name}': {exc}", PREFIX, "error")

@@ -3,7 +3,7 @@ import threading
 import requests
 import json
 from settings import API_BASE_URL, REQUEST_TIMEOUT_SECONDS
-from functions import log, debug_log, warning_log, error_log, response_data
+from functions import log, response_data
 
 PREFIX = "[DialogHandler]"
 
@@ -20,21 +20,21 @@ POLL_INTERVAL = 2  # seconds between polls
 
 
 def jdown_list_dialogs() -> list[int]:
-    debug_log("Listing pending dialogs", PREFIX)
+    log("Listing pending dialogs", PREFIX, "debug")
     try:
         res = requests.post(
             f"{API_BASE_URL}/dialogs/list",
             timeout=REQUEST_TIMEOUT_SECONDS
         )
     except requests.RequestException as exc:
-        error_log(f"While listing dialogs: {exc}", PREFIX)
+        log(f"While listing dialogs: {exc}", PREFIX, "error")
         return []
     data = response_data(res, "dialogs/list", [])
     return data if isinstance(data, list) else []
 
 
 def jdown_get_dialog(dialog_id: int) -> dict | None:
-    debug_log(f"Getting dialog info for id={dialog_id}", PREFIX)
+    log(f"Getting dialog info for id={dialog_id}", PREFIX, "debug")
     try:
         res = requests.post(
             f"{API_BASE_URL}/dialogs/get",
@@ -42,13 +42,13 @@ def jdown_get_dialog(dialog_id: int) -> dict | None:
             timeout=REQUEST_TIMEOUT_SECONDS
         )
     except requests.RequestException as exc:
-        error_log(f"While getting dialog {dialog_id}: {exc}", PREFIX)
+        log(f"While getting dialog {dialog_id}: {exc}", PREFIX, "error")
         return None
     return response_data(res, "dialogs/get", None)
 
 
 def jdown_get_dialog_type_info(dialog_type: str) -> dict | None:
-    debug_log(f"Fetching type info for '{dialog_type}'", PREFIX)
+    log(f"Fetching type info for '{dialog_type}'", PREFIX, "debug")
     try:
         res = requests.post(
             f"{API_BASE_URL}/dialogs/getTypeInfo",
@@ -56,13 +56,13 @@ def jdown_get_dialog_type_info(dialog_type: str) -> dict | None:
             timeout=REQUEST_TIMEOUT_SECONDS
         )
     except requests.RequestException as exc:
-        error_log(f"While getting type info: {exc}", PREFIX)
+        log(f"While getting type info: {exc}", PREFIX, "error")
         return None
     return response_data(res, "dialogs/getTypeInfo", None)
 
 
 def jdown_answer_dialog(dialog_id: int, data: dict, dialog_type: str = "") -> bool:
-    debug_log(f"Answering dialog id={dialog_id} with {data}", PREFIX)
+    log(f"Answering dialog id={dialog_id} with {data}", PREFIX, "debug")
     try:
         res = requests.post(
             f"{API_BASE_URL}/dialogs/answer",
@@ -70,15 +70,15 @@ def jdown_answer_dialog(dialog_id: int, data: dict, dialog_type: str = "") -> bo
             timeout=REQUEST_TIMEOUT_SECONDS
         )
     except requests.RequestException as exc:
-        error_log(f"While answering dialog {dialog_id}: {exc}", PREFIX)
+        log(f"While answering dialog {dialog_id}: {exc}", PREFIX, "error")
         return False
     if res.status_code != 200:
-        error_log(f"Answer dialog {dialog_id} failed: {res.status_code} {res.text}", PREFIX)
+        log(f"Answer dialog {dialog_id} failed: {res.status_code} {res.text}", PREFIX, "error")
         if dialog_type:
             type_info = jdown_get_dialog_type_info(dialog_type)
             if type_info:
-                error_log(f"Expected answer schema (in) for '{dialog_type}': {type_info.get('in')}", PREFIX)
-                error_log(f"Dialog output schema (out) for '{dialog_type}': {type_info.get('out')}", PREFIX)
+                log(f"Expected answer schema (in) for '{dialog_type}': {type_info.get('in')}", PREFIX, "error")
+                log(f"Dialog output schema (out) for '{dialog_type}': {type_info.get('out')}", PREFIX, "error")
         return False
     log(f"Dialog {dialog_id} answered and closed (type={dialog_type})", PREFIX)
     return True
@@ -93,10 +93,10 @@ def handle_dialogs():
         dialog_type = info["type"]
         if dialog_type in DIALOG_RULES:
             answer_data = DIALOG_RULES[dialog_type]
-            debug_log(f"Auto-answering dialog {dialog_id} (type={dialog_type})", PREFIX)
+            log(f"Auto-answering dialog {dialog_id} (type={dialog_type})", PREFIX, "debug")
             jdown_answer_dialog(dialog_id, answer_data, dialog_type)
         else:
-            debug_log(f"No rule for dialog type '{dialog_type}', skipping", PREFIX)
+            log(f"No rule for dialog type '{dialog_type}', skipping", PREFIX, "debug")
 
 
 def run(enabled: threading.Event = None):
@@ -108,5 +108,5 @@ def run(enabled: threading.Event = None):
         try:
             handle_dialogs()
         except Exception as exc:
-            error_log(f"{PREFIX} Unexpected error: {exc}")
+            log(f"{PREFIX} Unexpected error: {exc}", type="error")
         time.sleep(POLL_INTERVAL)

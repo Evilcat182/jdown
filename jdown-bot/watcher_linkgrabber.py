@@ -31,7 +31,7 @@ def jdown_linkgrabber_get_packages(name: str = None):
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
-        error_log(f"Could not query linkgrabber packages: {exc}")
+        log(f"Could not query linkgrabber packages: {exc}", type="error")
         return []
     packages = response_data(res, ctx, [])
     if name is not None:
@@ -51,7 +51,7 @@ def jdown_download_package(package_uuid: int) -> bool:
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
-        error_log(f"Could not move package {package_uuid} to download list: {exc}")
+        log(f"Could not move package {package_uuid} to download list: {exc}", type="error")
         return False
     return response_data(res, ctx, False) == ''
 
@@ -90,6 +90,6 @@ def run(enabled: threading.Event):
                 if ok:
                     log(f"Download started: {name}", PREFIX)
                 else:
-                    warning_log(f"Failed to start: {name}", PREFIX)
+                    log(f"Failed to start: {name}", PREFIX, "warning")
 
         time.sleep(2)

@@ -18,7 +18,7 @@ def jdown_downloads_get_state():
             timeout=REQUEST_TIMEOUT_SECONDS
         )
     except requests.RequestException as exc:
-        error_log(f"{PREFIX} Could not get downloads state: {exc}")
+        log(f"{PREFIX} Could not get downloads state: {exc}", type="error")
         return None
     return response_data(res, ctx, None)
 
@@ -45,7 +45,7 @@ def jdown_downloads_get_packages(name: str = None):
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
-        error_log(f"Could not query download packages: {exc}")
+        log(f"Could not query download packages: {exc}", type="error")
         return []
     packages = response_data(res, ctx, [])
     if name is not None:
@@ -84,7 +84,7 @@ def jdown_downloads_get_package_links(package_uuid: list[int]):
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
-        error_log(f"Could not query download links: {exc}")
+        log(f"Could not query download links: {exc}", type="error")
         return []
     return response_data(res, ctx, [])
 
@@ -100,7 +100,7 @@ def jdown_get_archive_info(link_ids: list[int] = None, package_ids: list[int] = 
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
     except requests.RequestException as exc:
-        error_log(f"Could not get archive info: {exc}")
+        log(f"Could not get archive info: {exc}", type="error")
         return []
     return response_data(res, ctx, [])
 
