@@ -29,13 +29,14 @@ series_settings = {
 }
 
 excludes = [
-    {"Pattern": "*.nfo",  "Dir": False, "CS": False},
-    {"Pattern": "*.jpg",  "Dir": False, "CS": False},
-    {"Pattern": "*.txt",  "Dir": False, "CS": False},
-    {"Pattern": "*.url",  "Dir": False, "CS": False},
-    {"Pattern": "*.iso",  "Dir": False, "CS": False},
-    {"Pattern": "proof",  "Dir": True,  "CS": False},
-    {"Pattern": "sample", "Dir": True,  "CS": False},
+    {"Pattern": "*.nfo",        "Dir": False, "CS": False},
+    {"Pattern": "*.jpg",        "Dir": False, "CS": False},
+    {"Pattern": "*.txt",        "Dir": False, "CS": False},
+    {"Pattern": "*.url",        "Dir": False, "CS": False},
+    {"Pattern": "*.iso",        "Dir": False, "CS": False},
+    {"Pattern": "*-sample.*",   "Dir": False, "CS": False},
+    {"Pattern": "proof",        "Dir": True,  "CS": False},
+    {"Pattern": "sample",       "Dir": True,  "CS": False},
 ]
 
 
