@@ -1,9 +1,10 @@
 import subprocess
 import sys
 import threading
+from functions import log
 
 # Run startup.py first (blocks until done)
-print("Running startup.py...")
+log("Running startup.py...")
 result = subprocess.run([sys.executable, "-u", "/app/startup.py"])
 if result.returncode != 0:
     sys.exit(result.returncode)
@@ -16,7 +17,7 @@ import watcher_dialogs
 import settings
 from webui import app
 
-print("Starting watchers...")
+log("Starting watchers...")
 threading.Thread(
     target=watcher_linkgrabber.run,
     args=(state.linkgrabber_enabled,),
@@ -38,7 +39,7 @@ threading.Thread(
     name="watcher-dialogs",
 ).start()
 
-print("Starting web UI on port 8080...")
+log("Starting web UI on port 8080...")
 if settings.DEBUG:
     app.run(host="0.0.0.0", port=8080, debug=True)
 else:

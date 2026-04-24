@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template
 import state
+from functions import log
 
 app = Flask(__name__)
 
@@ -37,10 +38,10 @@ def api_toggle(watcher: str):
 
     if ev.is_set():
         ev.clear()
-        print(f"[WebUI] {watcher} disabled")
+        log(f"{watcher} disabled", "[WebUI]")
     else:
         ev.set()
-        print(f"[WebUI] {watcher} enabled")
+        log(f"{watcher} enabled", "[WebUI]")
 
     return jsonify({
         "linkgrabber":    state.linkgrabber_enabled.is_set(),

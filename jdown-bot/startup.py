@@ -119,10 +119,10 @@ def jdown_ensure_premium_account() -> bool:
         return True
 
     if jdown_premium_account_is_set(PREMIUM_ACCOUNT_HOSTER, PREMIUM_ACCOUNT_USERNAME):
-        print(f"Premium account '{PREMIUM_ACCOUNT_USERNAME}' for '{PREMIUM_ACCOUNT_HOSTER}' already configured")
+        log(f"Premium account '{PREMIUM_ACCOUNT_USERNAME}' for '{PREMIUM_ACCOUNT_HOSTER}' already configured")
         return True
 
-    print(f"Configuring premium account '{PREMIUM_ACCOUNT_USERNAME}' for '{PREMIUM_ACCOUNT_HOSTER}'")
+    log(f"Configuring premium account '{PREMIUM_ACCOUNT_USERNAME}' for '{PREMIUM_ACCOUNT_HOSTER}'")
     if not jdown_premium_account_set(PREMIUM_ACCOUNT_HOSTER, PREMIUM_ACCOUNT_USERNAME, PREMIUM_ACCOUNT_PASSWORD):
         error_log("Failed to configure premium account")
         return False
@@ -134,7 +134,7 @@ def jdown_ensure_premium_account() -> bool:
 
 debug_log(f"startup.py started with API_BASE_URL='{API_BASE_URL}'")
 debug_log(f"startup.py DEBUG mode is {'ON' if DEBUG else 'OFF'}")
-print("Waiting for JDownloader to get ready ...")
+log("Waiting for JDownloader to get ready ...")
 if not jdown_wait_ready():
     error_log("JDownloader did not become ready in time")
     sys.exit(1)
@@ -145,7 +145,7 @@ for pwd in EXTRACTION_PASSWORDS.split(","):
     if not pwd:
         continue
     if jdown_archivepassword_add(pwd):
-        print(f"Added Archive extract Password '{pwd}'")
+        log(f"Added Archive extract Password '{pwd}'")
     else:
         error_log(f"Failed to add Archive extract Password '{pwd}'")
 
@@ -153,7 +153,7 @@ if not jdown_ensure_premium_account():
     error_log("Premium account setup failed, continuing anyway")
 
 # SET DeleteArchiveFilesAfterExtractionAction to "Delete files from disk"
-print("Setting config DeleteArchiveFilesAfterExtractionAction to 'Delete files from disk'")
+log("Setting config DeleteArchiveFilesAfterExtractionAction to 'Delete files from disk'")
 if not jdown_config_set(
     "org.jdownloader.extensions.extraction.ExtractionConfig",
     "cfg/org.jdownloader.extensions.extraction.ExtractionExtension",
@@ -164,7 +164,7 @@ if not jdown_config_set(
     sys.exit(1)
 
 # SET IfFileExistsAction to "Auto-Rename the new File"
-print("Setting config IfFileExistsAction to 'Auto-Rename the new File'")
+log("Setting config IfFileExistsAction to 'Auto-Rename the new File'")
 if not jdown_config_set(
     "org.jdownloader.extensions.extraction.ExtractionConfig",
     "cfg/org.jdownloader.extensions.extraction.ExtractionExtension",

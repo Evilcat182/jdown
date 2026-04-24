@@ -5,7 +5,7 @@ import shutil
 import fnmatch
 from guessit import guessit
 from plex import plex_scan_library
-from settings import DEBUG, COLOR_RESET, COLOR_RED, COLOR_YELLOW, COLOR_GREEN
+from functions import log, debug_log, warning_log, error_log
 import state
 
 PREFIX = "[Organizer]"
@@ -91,8 +91,7 @@ def _get_excluded(path: str, settings: list = excludes) -> set:
             if entry.is_dir() != match_dirs:
                 continue
             excluded.add(entry)
-            if DEBUG:
-                print(f"{PREFIX} Excluding '{entry}' from copy")
+            debug_log(f"Excluding '{entry}' from copy", PREFIX)
     return excluded
 
 
@@ -122,13 +121,13 @@ def _safe_copy(src: Path, dst: Path) -> bool:
     dst.parent.mkdir(parents=True, exist_ok=True)
     if dst.exists():
         if not _files_differ(src, dst):
-            print(f"{COLOR_YELLOW}{PREFIX} '{dst.name}' already exists, skipping{COLOR_RESET}")
+            warning_log(f"'{dst.name}' already exists, skipping", PREFIX)
             return False
         label = " (updated)"
     else:
         label = ""
     shutil.copy2(str(src), str(dst))
-    print(f"{PREFIX} '{src.name}' -> '{dst}'{label}")
+    log(f"'{src.name}' -> '{dst}'{label}", PREFIX)
     return True
 
 
@@ -176,7 +175,7 @@ def _write_error(path: Path, missing: list[str]):
     lines += ["\n"]
     with error_file.open("a") as fh:
         fh.writelines(lines)
-    print(f"{COLOR_YELLOW}{PREFIX} Missing mandatory fields {missing}, wrote ORGANIZER-ERROR.txt in '{path}'{COLOR_RESET}")
+    warning_log(f"Missing mandatory fields {missing}, wrote ORGANIZER-ERROR.txt in '{path}'", PREFIX)
 
 
 def _organize_movie(src: Path, dest: Path, info: dict, excluded: set = None, error_path: Path = None) -> bool:
@@ -275,32 +274,32 @@ def organize(src: Path):
     src = Path(src)
 
     if not src.is_dir():
-        print(f"{COLOR_YELLOW}{PREFIX} Warning: '{src}' is not a directory, skipping{COLOR_RESET}")
+        warning_log(f"Warning: '{src}' is not a directory, skipping", PREFIX)
         return
 
-    print(f"{PREFIX} Processing '{src.name}'...")
+    log(f"Processing '{src.name}'...", PREFIX)
 
     info = dict(_guessit(src.name))
     media_type = info.get("type")
 
     if not MEDIA_CONFIDENCE_FIELDS.intersection(info):
-        print(f"{COLOR_YELLOW}{PREFIX} '{src.name}' does not look like media, skipping{COLOR_RESET}")
+        warning_log(f"'{src.name}' does not look like media, skipping", PREFIX)
         return
 
     excluded = _get_excluded(src)
     content_root = _resolve_content_root(src)
 
-    print(f"{PREFIX} Copying files from '{src.name}'...")
+    log(f"Copying files from '{src.name}'...", PREFIX)
     if media_type == "movie":
         moved = _organize_movie(content_root, Path(MOVIE_DESTINATION), info, excluded, error_path=src)
     elif media_type == "episode":
         moved = _organize_series(content_root, Path(SERIES_DESTINATION), info, excluded, error_path=src)
     else:
-        print(f"{COLOR_YELLOW}{PREFIX} Unknown type, skipping{COLOR_RESET}")
+        warning_log("Unknown type, skipping", PREFIX)
         return
-    
+
     if moved:
-        print(f"{COLOR_GREEN}{PREFIX} Finished copying '{src.name}'{COLOR_RESET}")
+        log(f"Finished copying '{src.name}'", PREFIX)
 
     if moved and state.plex_scan_enabled.is_set():
         if media_type == "movie":
@@ -311,6 +310,6 @@ def organize(src: Path):
     if moved and state.delete_source_enabled.is_set():
         try:
             shutil.rmtree(src)
-            print(f"{PREFIX} Removed source '{src.name}'")
+            log(f"Removed source '{src.name}'", PREFIX)
         except Exception as exc:
-            print(f"{COLOR_RED}{PREFIX} Could not remove source '{src.name}': {exc}{COLOR_RESET}")
+            error_log(f"Could not remove source '{src.name}': {exc}", PREFIX)

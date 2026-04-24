@@ -57,7 +57,7 @@ def jdown_download_package(package_uuid: int) -> bool:
 
 
 def run(enabled: threading.Event):
-    print(f"{PREFIX} Starting linkgrabber watcher")
+    log("Starting linkgrabber watcher", PREFIX)
     seen_uuids: set[int] = set()
     # uid -> (last_bytesTotal, last_changed_time, ready_reported)
     pkg_state: dict[int, list] = {}
@@ -77,7 +77,7 @@ def run(enabled: threading.Event):
             if uid not in seen_uuids:
                 seen_uuids.add(uid)
                 pkg_state[uid] = [total, now, False]
-                print(f"{PREFIX} New Package found: {name}")
+                log(f"New Package found: {name}", PREFIX)
                 continue
 
             last_total, last_changed, ready = pkg_state[uid]
@@ -85,8 +85,11 @@ def run(enabled: threading.Event):
                 pkg_state[uid] = [total, now, False]
             elif not ready and (now - last_changed) >= SETTLE_SECONDS:
                 pkg_state[uid][2] = True
-                print(f"{PREFIX} Package ready: {name} ({total} bytes)")
+                log(f"Package ready: {name} ({total} bytes)", PREFIX)
                 ok = jdown_download_package(uid)
-                print(f"{PREFIX} Download started: {name}" if ok else f"{PREFIX} Failed to start: {name}")
+                if ok:
+                    log(f"Download started: {name}", PREFIX)
+                else:
+                    warning_log(f"Failed to start: {name}", PREFIX)
 
         time.sleep(2)

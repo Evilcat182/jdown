@@ -7,6 +7,21 @@ from settings import API_BASE_URL, REQUEST_TIMEOUT_SECONDS
 from functions import *
 from organizer import organize
 
+PREFIX = "[DownloadWatch]"
+
+def jdown_downloads_get_state():
+    # returned states: STOPPED_STATE, RUNNING, PAUSE
+    ctx = "downloadcontroller/getCurrentState"
+    try:
+        res = requests.post(
+            f"{API_BASE_URL}/{ctx}",
+            timeout=REQUEST_TIMEOUT_SECONDS
+        )
+    except requests.RequestException as exc:
+        error_log(f"{PREFIX} Could not get downloads state: {exc}")
+        return None
+    return response_data(res, ctx, None)
+
 def jdown_downloads_get_packages(name: str = None):
     query = {
         "availableOfflineCount"     : True,
@@ -73,6 +88,23 @@ def jdown_downloads_get_package_links(package_uuid: list[int]):
         return []
     return response_data(res, ctx, [])
 
+def jdown_get_archive_info(link_ids: list[int] = None, package_ids: list[int] = None) -> list:
+    ctx = "extraction/getArchiveInfo"
+    try:
+        res = requests.post(
+            f"{API_BASE_URL}/{ctx}",
+            params={
+                "linkIds"    : json.dumps(link_ids or []),
+                "packageIds" : json.dumps(package_ids or [])
+            },
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+    except requests.RequestException as exc:
+        error_log(f"Could not get archive info: {exc}")
+        return []
+    return response_data(res, ctx, [])
+
+
 def _is_finished(status: str) -> bool:
     if status is None:
         return False
@@ -85,10 +117,8 @@ def _all_links_finished(package_uuid: int) -> bool:
     return all(_is_finished(link.get("status") or "") for link in links)
 
 
-PREFIX = "[DownloadWatch]"
-
 def run(enabled: threading.Event):
-    print(f"{PREFIX} Starting downloads watcher")
+    log("Starting downloads watcher", PREFIX)
     reported_uuids: set[int] = set()
 
     while True:
@@ -108,7 +138,7 @@ def run(enabled: threading.Event):
             if _is_finished(status) and _all_links_finished(uid):
                 reported_uuids.add(uid)
                 if Path(pkg.get('saveTo')).exists():
-                    print(f"{PREFIX} Finished: {name} ({pkg.get('saveTo', '?')})")
+                    log(f"Finished: {name} ({pkg.get('saveTo', '?')})", PREFIX)
                     organize(pkg.get('saveTo'))
 
         time.sleep(2)
@@ -123,4 +153,3 @@ def run(enabled: threading.Event):
 #    print(f"Package: {pkg["status"]}")
 #    print(f"Link: {link["status"]}")
 #    print("")
-  

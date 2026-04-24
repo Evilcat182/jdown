@@ -1,4 +1,5 @@
 import requests, os
+from functions import log, warning_log, error_log
 
 PREFIX = "[PLEX-API]"
 PLEX_TOKEN = os.getenv("PLEX_TOKEN","")
@@ -23,13 +24,13 @@ def plex_library_get_all():
         )
         res.raise_for_status()
     except requests.exceptions.ConnectionError:
-        print(f"{PREFIX} Error: Could not connect to Plex at {PLEX_API_ROOT}. Check IP/port.")
+        error_log(f"Could not connect to Plex at {PLEX_API_ROOT}. Check IP/port.", PREFIX)
         return []
     except requests.exceptions.HTTPError as e:
-        print(f"{PREFIX} Error: Plex returned HTTP {e.response.status_code} when fetching libraries.")
+        error_log(f"Plex returned HTTP {e.response.status_code} when fetching libraries.", PREFIX)
         return []
     except requests.exceptions.Timeout:
-        print(f"{PREFIX} Error: Request to Plex timed out after {REQUEST_TIMEOUT_SECONDS}s.")
+        error_log(f"Request to Plex timed out after {REQUEST_TIMEOUT_SECONDS}s.", PREFIX)
         return []
     return res.json()["MediaContainer"]["Directory"]
 
@@ -45,13 +46,13 @@ def plex_library_get_id(lib_type: str, library_names: list[str] = None):
         names = guess_names[lib_type]
     matches = [lib["key"] for lib in filtered if lib["title"].casefold() in names]
     if not matches:
-        print(f"{PREFIX} Error: No {lib_type} library found matching: {names}")
+        error_log(f"No {lib_type} library found matching: {names}", PREFIX)
         return None
     return matches[0]
 
 def plex_scan_library(lib_type: str):
     if not plex_check():
-        print(f"{PREFIX} WARNING: PLEX_TOKEN or PLEX_API_ROOT env var not set ... Skipping Plex scan")
+        warning_log(f"PLEX_TOKEN or PLEX_API_ROOT env var not set ... Skipping Plex scan", PREFIX)
         return
 
     HEADERS = {
@@ -64,7 +65,7 @@ def plex_scan_library(lib_type: str):
     }
     section_id = plex_library_get_id(lib_type, library_names[lib_type])
     if section_id is None:
-        print(f"{PREFIX} No {lib_type} library found.")
+        error_log(f"No {lib_type} library found.", PREFIX)
         return
     try:
         res = requests.get(
@@ -74,12 +75,12 @@ def plex_scan_library(lib_type: str):
         )
         res.raise_for_status()
     except requests.exceptions.ConnectionError:
-        print(f"{PREFIX} Error: Could not connect to Plex at {PLEX_API_ROOT}. Check IP/port.")
+        error_log(f"Could not connect to Plex at {PLEX_API_ROOT}. Check IP/port.", PREFIX)
         return
     except requests.exceptions.HTTPError as e:
-        print(f"{PREFIX} Error: Plex returned HTTP {e.response.status_code} when triggering scan.")
+        error_log(f"Plex returned HTTP {e.response.status_code} when triggering scan.", PREFIX)
         return
     except requests.exceptions.Timeout:
-        print(f"{PREFIX} Error: Scan request timed out after {REQUEST_TIMEOUT_SECONDS}s.")
+        error_log(f"Scan request timed out after {REQUEST_TIMEOUT_SECONDS}s.", PREFIX)
         return
-    print(f"{PREFIX} Scan triggered for {lib_type} library (section {section_id}).")
+    log(f"Scan triggered for {lib_type} library (section {section_id}).", PREFIX)

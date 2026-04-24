@@ -1,13 +1,22 @@
 import requests
 import time
-from settings import DEBUG, API_BASE_URL, REQUEST_TIMEOUT_SECONDS, WAIT_TIMEOUT_SECONDS
+from settings import DEBUG, API_BASE_URL, REQUEST_TIMEOUT_SECONDS, WAIT_TIMEOUT_SECONDS, COLOR_RESET, COLOR_GREY, COLOR_RED, COLOR_YELLOW
 
-def debug_log(message: str):
+def log(message: str, prefix: str = ""):
+    print(f"{prefix} {message}" if prefix else message)
+
+def debug_log(message: str, prefix: str = ""):
     if DEBUG:
-        print(message)
+        p = f"{prefix} " if prefix else ""
+        print(f"{COLOR_GREY}{p}{message}{COLOR_RESET}")
 
-def error_log(message: str):
-    print(f"ERROR: {message}")
+def warning_log(message: str, prefix: str = ""):
+    p = f"{prefix} " if prefix else ""
+    print(f"{COLOR_YELLOW}{p}{message}{COLOR_RESET}")
+
+def error_log(message: str, prefix: str = ""):
+    p = f"{prefix} " if prefix else ""
+    print(f"{COLOR_RED}{p}ERROR: {message}{COLOR_RESET}")
 
 def response_data(res: requests.Response, context: str, default):
     if res.status_code != 200:
