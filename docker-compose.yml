@@ -82,9 +82,9 @@ services:
       - ./init/init-jdownloader.sh:/etc/cont-init.d/99-init-jdownloader.sh:Z,ro
     restart: unless-stopped
 
-  jdown-bot:
-    build: ./jdown-bot
-    container_name: jdown-bot
+  jbot:
+    build: ./jbot
+    container_name: jbot
     stop_signal: SIGINT
     depends_on:
       jdownloader:
@@ -109,7 +109,7 @@ services:
       - PLEX_API_ROOT=${PLEX_API_ROOT}
       - PLEX_TOKEN=${PLEX_TOKEN}
     volumes:
-      - ./jdown-bot:/app:Z,rw
+      - ./jbot:/app:Z,rw
       - ${DOWNLOADS_PATH}:/output:z,rw
       - ${MOVIE_DESTINATION}:${MOVIE_DESTINATION}:Z,rw
       - ${SERIES_DESTINATION}:${SERIES_DESTINATION}:Z,rw
