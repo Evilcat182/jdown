@@ -132,10 +132,12 @@ def _safe_copy(src: Path, dst: Path) -> bool:
 
 
 def _resolve_content_root(src: Path) -> Path:
-    """If src contains only a single subdirectory and no direct files, return that subdirectory."""
+    """If src contains exactly one subdirectory and no direct video files, return that subdirectory."""
     entries = list(src.iterdir())
-    if len(entries) == 1 and entries[0].is_dir():
-        return entries[0]
+    subdirs = [e for e in entries if e.is_dir()]
+    video_files = [e for e in entries if e.is_file() and e.suffix.lower() in VIDEO_EXTENSIONS]
+    if len(subdirs) == 1 and not video_files:
+        return subdirs[0]
     return src
 
 
@@ -179,16 +181,41 @@ def _write_error(path: Path, missing: list[str]):
 
 
 def _organize_movie(src: Path, dest: Path, info: dict, excluded: set = None, error_path: Path = None) -> bool:
+    videos = _find_videos(src, excluded)
+
+    if len(videos) > 1:
+        ep = error_path or src
+        error_file = ep / "ORGANIZER-ERROR.txt"
+        lines = [f"Path: {ep.resolve()}\n",
+                 f"Multiple video files found for a movie ({len(videos)} files):\n"]
+        lines += [f"  - {v.name}\n" for v in videos]
+        lines += ["Nothing was copied. Please verify the content and organize manually.\n\n"]
+        with error_file.open("a") as fh:
+            fh.writelines(lines)
+        warning_log(f"Multiple video files found in movie '{ep.name}', skipping", PREFIX)
+        return False
+
     missing = _check_mandatory(info, movie_settings["mandatory"])
     if missing:
-        _write_error(error_path or src, missing)
-        return False
+        if len(videos) == 1:
+            video_info = dict(_guessit(videos[0].name))
+            merged = {**info, **{k: v for k, v in video_info.items() if v is not None and not info.get(k)}}
+            missing = _check_mandatory(merged, movie_settings["mandatory"])
+            if not missing:
+                debug_log(f"Filled missing fields from video filename '{videos[0].name}'", PREFIX)
+                info = merged
+            else:
+                _write_error(error_path or src, missing)
+                return False
+        else:
+            _write_error(error_path or src, missing)
+            return False
 
     folder_name = _render_template(movie_settings["folder_template_name"], info, sep=" ")
     out_dir = dest / folder_name
 
     moved = False
-    for video in _find_videos(src, excluded):
+    for video in videos:
         filename = _render_template(movie_settings["file_template_name"], info, sep=".") + video.suffix.lower()
         if _safe_copy(video, out_dir / filename):
             moved = True
