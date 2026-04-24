@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>jdown-bot</title>
   <style>
-    body { font-family: sans-serif; max-width: 480px; margin: 60px auto; padding: 0 16px; background: #f5f5f5; }
+    body { font-family: sans-serif; max-width: 640px; margin: 60px auto; padding: 0 16px; background: #f5f5f5; }
     h1 { font-size: 1.3rem; margin-bottom: 24px; }
     .card { background: #fff; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
             display: flex; align-items: center; justify-content: space-between;
@@ -17,6 +17,22 @@
              font-size: 0.85rem; font-weight: 600; }
     .btn-disable { background: #dc3545; color: #fff; }
     .btn-enable  { background: #28a745; color: #fff; }
+    .btn-restart { background: #6c757d; color: #fff; }
+    .btn-restart:hover { background: #dc3545; }
+
+    /* Log panel */
+    #log-panel { background: #1e1e1e; border-radius: 8px; padding: 12px 14px;
+                 margin-top: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+    #log-panel h2 { color: #ccc; font-size: 0.85rem; margin: 0 0 10px; letter-spacing: .05em; text-transform: uppercase; }
+    #log-output { height: 280px; overflow-y: auto; font-family: monospace; font-size: 0.78rem;
+                  line-height: 1.55; white-space: pre-wrap; word-break: break-all; }
+    .log-info    { color: #d4d4d4; }
+    .log-debug   { color: #6a9955; }
+    .log-warning { color: #d7ba7d; }
+    .log-error   { color: #f44747; }
+    .log-success { color: #4ec9b0; }
+    .log-ts      { color: #555; margin-right: 6px; }
+    .log-prefix  { color: #888; margin-right: 4px; }
   </style>
 </head>
 <body>
@@ -62,11 +78,23 @@
     <button id="btn-dialogs" onclick="toggle('dialogs')"></button>
   </div>
 
+  <div class="card">
+    <span class="label" title="Restart the jdown-bot process">Restart jdown-bot</span>
+    <button class="btn-restart" id="btn-restart" onclick="restart()">Restart</button>
+  </div>
+
+  <div id="log-panel">
+    <h2>Log</h2>
+    <div id="log-output"></div>
+  </div>
+
   <script>
+    // ── Watcher toggles ──────────────────────────────────────────────────────
     function applyStatus(data) {
       for (const [key, enabled] of Object.entries(data)) {
         const badge = document.getElementById('badge-' + key);
         const btn   = document.getElementById('btn-'   + key);
+        if (!badge) continue;
         badge.textContent = enabled ? 'ON' : 'OFF';
         badge.className   = 'badge ' + (enabled ? 'on' : 'off');
         btn.textContent   = enabled ? 'Disable' : 'Enable';
@@ -80,8 +108,50 @@
       fetch('/api/toggle/' + watcher, {method: 'POST'})
         .then(r => r.json()).then(applyStatus);
     }
+    function restart() {
+      const btn = document.getElementById('btn-restart');
+      btn.textContent = 'Restarting…';
+      btn.disabled = true;
+      fetch('/api/restart', {method: 'POST'})
+        .catch(() => {})
+        .finally(() => setTimeout(() => { btn.textContent = 'Restart'; btn.disabled = false; }, 3000));
+    }
+
+    // ── Log panel ────────────────────────────────────────────────────────────
+    let lastId = 0;
+    const output = document.getElementById('log-output');
+
+    function appendLogs(entries) {
+      if (!entries.length) return;
+      const atBottom = output.scrollHeight - output.scrollTop <= output.clientHeight + 4;
+      for (const e of entries) {
+        const line = document.createElement('div');
+        line.className = 'log-' + e.type;
+        const ts     = `<span class="log-ts">${e.ts}</span>`;
+        const prefix = e.prefix ? `<span class="log-prefix">${e.prefix}</span>` : '';
+        const label  = e.type === 'error' ? 'ERROR: ' : '';
+        line.innerHTML = ts + prefix + label + escHtml(e.message);
+        output.appendChild(line);
+        lastId = e.id;
+      }
+      if (atBottom) output.scrollTop = output.scrollHeight;
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function pollLogs() {
+      fetch('/api/logs?after=' + lastId)
+        .then(r => r.json())
+        .then(appendLogs)
+        .catch(() => {});
+    }
+
     refresh();
-    setInterval(refresh, 5000);
+    pollLogs();
+    setInterval(refresh,   5000);
+    setInterval(pollLogs,  2000);
   </script>
 </body>
 </html>

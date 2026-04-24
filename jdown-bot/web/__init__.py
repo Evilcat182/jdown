@@ -1,6 +1,9 @@
-from flask import Flask, jsonify, render_template
+import os
+import sys
+import threading
+from flask import Flask, jsonify, render_template, request
 import state
-from core import log
+from core import log, get_logs
 
 app = Flask(__name__)
 
@@ -50,3 +53,16 @@ def api_toggle(watcher: str):
         "delete_source": state.delete_source_enabled.is_set(),
         "dialogs":       state.dialogs_enabled.is_set(),
     })
+
+
+@app.route("/api/logs")
+def api_logs():
+    after = request.args.get("after", 0, type=int)
+    return jsonify(get_logs(after))
+
+
+@app.route("/api/restart", methods=["POST"])
+def api_restart():
+    log("Restarting…", PREFIX, "warning")
+    threading.Timer(0.3, lambda: os.execv(sys.executable, [sys.executable] + sys.argv)).start()
+    return jsonify({"restarting": True})
