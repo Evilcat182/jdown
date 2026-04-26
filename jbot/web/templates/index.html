@@ -2,165 +2,425 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>J-BOT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>jbot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; margin: 0; padding: 40px 24px 32px; background: #f5f5f5; box-sizing: border-box; }
-    .controls { max-width: 640px; margin: 0 auto; }
-    h1 { font-size: 1.3rem; margin-bottom: 24px; }
-    .card { background: #fff; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px;
-            display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 1px 3px rgba(0,0,0,.1); }
-    .label { font-size: 0.95rem; font-weight: 500; cursor: default; }
-    .badge { font-size: 0.8rem; padding: 2px 10px; border-radius: 12px; margin-left: 10px; }
-    .on  { background: #d4edda; color: #155724; }
-    .off { background: #f8d7da; color: #721c24; }
-    button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 18px;
-             font-size: 0.85rem; font-weight: 600; }
-    .btn-disable { background: #dc3545; color: #fff; }
-    .btn-enable  { background: #28a745; color: #fff; }
-    .btn-restart { background: #6c757d; color: #fff; }
-    .btn-restart:hover { background: #dc3545; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* Log panel */
-    #log-panel { background: #1e1e1e; border-radius: 8px; padding: 12px 14px;
-                 margin-top: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
-    #log-panel h2 { color: #ccc; font-size: 0.85rem; margin: 0 0 10px; letter-spacing: .05em; text-transform: uppercase; }
-    #log-output { height: calc(100vh - 520px); min-height: 200px; overflow-y: auto;
-                  font-family: monospace; font-size: 0.78rem;
-                  line-height: 1.55; white-space: pre-wrap; word-break: break-all; }
-    .log-info    { color: #d4d4d4; }
-    .log-debug   { color: #6a9955; }
-    .log-warning { color: #d7ba7d; }
-    .log-error   { color: #f44747; }
-    .log-success { color: #4ec9b0; }
-    .log-ts      { color: #555; margin-right: 6px; }
-    .log-prefix  { color: #888; margin-right: 4px; }
+    :root {
+      --bg:         #0d0d10;
+      --surface:    #17171c;
+      --surface-2:  #1f1f26;
+      --border:     #2a2a34;
+      --border-2:   #35353f;
+      --text-1:     #ededf0;
+      --text-2:     #8e8e9e;
+      --text-3:     #55555f;
+      --accent:     #6366f1;
+      --accent-h:   #4f46e5;
+      --green:      #22c55e;
+      --amber:      #f59e0b;
+      --red:        #ef4444;
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-1);
+      min-height: 100vh;
+      padding: 32px 16px 56px;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .layout {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 4px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      flex-shrink: 0;
+    }
+    .brand-name {
+      font-size: 17px; font-weight: 600;
+      letter-spacing: -0.025em;
+      color: var(--text-1);
+    }
+    .brand-sub { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+
+    /* ── Section label ───────────────────────────────────────────────────────── */
+    .section-label {
+      font-size: 10.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--text-3);
+      margin-bottom: 8px;
+    }
+
+    /* ── Toggle card list ───────────────────────────────────────────────────── */
+    .card-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .toggle-row {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-row:hover { background: var(--surface-2); }
+
+    .toggle-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .toggle-name { font-size: 13.5px; font-weight: 500; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .toggle-desc { font-size: 11.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Toggle switch */
+    .switch { position: relative; display: inline-block; width: 38px; height: 21px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .slider {
+      position: absolute; inset: 0;
+      cursor: pointer;
+      background: var(--border-2);
+      border-radius: 21px;
+      transition: background 0.18s;
+    }
+    .slider::before {
+      content: '';
+      position: absolute;
+      width: 15px; height: 15px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.18s cubic-bezier(.4,0,.2,1);
+      box-shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+    input:checked + .slider { background: var(--accent); }
+    input:checked + .slider::before { transform: translateX(17px); }
+    input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ── Action cards ────────────────────────────────────────────────────────── */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .action-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+    }
+    .action-card.full { grid-column: 1 / -1; }
+    .action-title {
+      font-size: 13px; font-weight: 500;
+      color: var(--text-1);
+      margin-bottom: 12px;
+    }
+    .action-desc { font-size: 11.5px; color: var(--text-3); margin-bottom: 14px; line-height: 1.55; }
+
+    /* ── Buttons ─────────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 8px 16px;
+      border: none; border-radius: 7px;
+      font-size: 13px; font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.13s, opacity 0.13s, color 0.13s;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary  { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled)  { background: var(--accent-h); }
+    .btn-ghost    { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); }
+    .btn-ghost:hover:not(:disabled)    { background: var(--border); color: var(--text-1); }
+    .btn-danger   { background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,.25); }
+    .btn-danger:hover:not(:disabled)   { background: rgba(239,68,68,.08); }
+
+    /* ── Path input ──────────────────────────────────────────────────────────── */
+    .input-row { display: flex; gap: 8px; }
+    .path-input {
+      flex: 1; min-width: 0;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 8px 12px;
+      font-size: 12.5px;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      color: var(--text-1);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .path-input::placeholder { color: var(--text-3); }
+    .path-input:focus { border-color: var(--accent); }
+
+    /* ── Log panel ───────────────────────────────────────────────────────────── */
+    .log-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .log-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .log-header-left { display: flex; align-items: center; gap: 8px; }
+    .log-live-dot {
+      width: 6px; height: 6px;
+      background: var(--green); border-radius: 50%;
+      box-shadow: 0 0 5px var(--green);
+      animation: livepulse 2.4s ease-in-out infinite;
+    }
+    @keyframes livepulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+    .log-title {
+      font-size: 10.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--text-3);
+    }
+    .log-clear-btn {
+      font-size: 11px; color: var(--text-3);
+      background: none; border: none; cursor: pointer;
+      padding: 3px 8px; border-radius: 4px; font-family: inherit;
+      transition: color 0.13s, background 0.13s;
+    }
+    .log-clear-btn:hover { color: var(--text-1); background: var(--surface-2); }
+
+    #log-output {
+      padding: 10px 16px;
+      height: calc(100vh - 580px);
+      min-height: 200px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 11.5px;
+      line-height: 1.75;
+    }
+    #log-output::-webkit-scrollbar { width: 5px; }
+    #log-output::-webkit-scrollbar-track { background: transparent; }
+    #log-output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .log-line { display: flex; gap: 8px; align-items: baseline; }
+    .log-ts     { color: var(--text-3); flex-shrink: 0; font-size: 11px; }
+    .log-prefix { color: #a78bfa; flex-shrink: 0; }
+    .log-msg    { word-break: break-all; }
+    .log-info    .log-msg { color: #c9d1d9; }
+    .log-debug   .log-msg { color: #6a9955; }
+    .log-warning .log-msg { color: var(--amber); }
+    .log-error   .log-msg { color: #f87171; }
+    .log-error   .log-prefix { color: #f87171; }
+    .log-success .log-msg { color: #34d399; }
+    .log-success .log-prefix { color: #34d399; }
+
+    /* ── Responsive ──────────────────────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      body { padding: 20px 12px 48px; }
+      .action-grid { grid-template-columns: 1fr; }
+      .action-card.full { grid-column: auto; }
+      .input-row { flex-direction: column; }
+    }
   </style>
 </head>
 <body>
-  <div class="controls">
-  <h1>jbot</h1>
+  <div class="layout">
 
-  <div class="card" id="card-linkgrabber">
-    <span class="label" title="Will automatically start downloading any grabed link">
-      Autostart Downloads
-      <span class="badge" id="badge-linkgrabber"></span>
-    </span>
-    <button id="btn-linkgrabber" onclick="toggle('linkgrabber')"></button>
-  </div>
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-dot"></div>
+        <div>
+          <div class="brand-name">jbot</div>
+          <div class="brand-sub">Download automation</div>
+        </div>
+      </div>
+      <button class="btn btn-danger" id="btn-restart" onclick="restart()">Restart</button>
+    </header>
 
-  <div class="card" id="card-downloads">
-    <span class="label" title="Will cleanup any unnecessary files, rename files and folders and move them to final destination">
-      Auto organize when finished
-      <span class="badge" id="badge-downloads"></span>
-    </span>
-    <button id="btn-downloads" onclick="toggle('downloads')"></button>
-  </div>
+    <!-- Watchers -->
+    <section>
+      <div class="section-label">Automation</div>
+      <div class="card-list">
 
-  <div class="card" id="card-plex">
-    <span class="label" title="Triggers a Plex library scan after a download has been organized">
-      Invoke Plex Media Scan after successfull download
-      <span class="badge" id="badge-plex"></span>
-    </span>
-    <button id="btn-plex" onclick="toggle('plex')"></button>
-  </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-name">Autostart Downloads</span>
+            <span class="toggle-desc">Automatically start queued links</span>
+          </div>
+          <label class="switch" title="Toggle autostart">
+            <input type="checkbox" id="toggle-linkgrabber" onchange="toggle('linkgrabber')">
+            <span class="slider"></span>
+          </label>
+        </div>
 
-  <div class="card" id="card-delete_source">
-    <span class="label" title="Will delete extracted source folder from downloads path, if copy was successfull">
-      Delete downloaded source
-      <span class="badge" id="badge-delete_source"></span>
-    </span>
-    <button id="btn-delete_source" onclick="toggle('delete_source')"></button>
-  </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-name">Auto-organize on Finish</span>
+            <span class="toggle-desc">Rename, clean up and move completed downloads</span>
+          </div>
+          <label class="switch" title="Toggle auto-organize">
+            <input type="checkbox" id="toggle-downloads" onchange="toggle('downloads')">
+            <span class="slider"></span>
+          </label>
+        </div>
 
-  <div class="card" id="card-dialogs">
-    <span class="label" title="Auto-answer JDownloader dialogs (e.g. external link requests)">
-      Auto-answer Dialogs
-      <span class="badge" id="badge-dialogs"></span>
-    </span>
-    <button id="btn-dialogs" onclick="toggle('dialogs')"></button>
-  </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-name">Plex Library Scan</span>
+            <span class="toggle-desc">Trigger a Plex scan after each organize</span>
+          </div>
+          <label class="switch" title="Toggle Plex scan">
+            <input type="checkbox" id="toggle-plex" onchange="toggle('plex')">
+            <span class="slider"></span>
+          </label>
+        </div>
 
-  <div class="card">
-    <span class="label" title="Restart the jbot process">Restart jbot</span>
-    <button class="btn-restart" id="btn-restart" onclick="restart()">Restart</button>
-  </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-name">Delete Source After Copy</span>
+            <span class="toggle-desc">Remove the download folder once moved</span>
+          </div>
+          <label class="switch" title="Toggle delete source">
+            <input type="checkbox" id="toggle-delete_source" onchange="toggle('delete_source')">
+            <span class="slider"></span>
+          </label>
+        </div>
 
-  <div class="card" style="flex-direction: column; align-items: stretch; gap: 10px;">
-    <span class="label" title="Manually organize a folder by path">Manual Organize</span>
-    <div style="display: flex; gap: 8px;">
-      <input id="organize-path" type="text" placeholder="/path/to/folder"
-             style="flex: 1; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.85rem;">
-      <button id="btn-organize" onclick="organizeManual()" style="background: #0d6efd; color: #fff;">Organize</button>
-    </div>
-  </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-name">Auto-answer Dialogs</span>
+            <span class="toggle-desc">Dismiss JDownloader prompts automatically</span>
+          </div>
+          <label class="switch" title="Toggle dialog auto-answer">
+            <input type="checkbox" id="toggle-dialogs" onchange="toggle('dialogs')">
+            <span class="slider"></span>
+          </label>
+        </div>
 
-  </div><!-- /.controls -->
+      </div>
+    </section>
 
-  <div id="log-panel">
-    <h2>Log</h2>
-    <div id="log-output"></div>
-  </div>
+    <!-- Actions -->
+    <section>
+      <div class="section-label">Actions</div>
+      <div class="action-grid">
+
+        <div class="action-card full">
+          <div class="action-title">Organize a folder</div>
+          <div class="input-row">
+            <input id="organize-path" class="path-input" type="text"
+                   placeholder="/downloads/My.Show.S01E01.1080p"
+                   spellcheck="false" autocomplete="off">
+            <button id="btn-organize" class="btn btn-primary" onclick="organizeManual()">Organize</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Log -->
+    <section>
+      <div class="log-panel">
+        <div class="log-header">
+          <div class="log-header-left">
+            <div class="log-live-dot"></div>
+            <span class="log-title">Live Log</span>
+          </div>
+          <button class="log-clear-btn" onclick="clearLog()">Clear</button>
+        </div>
+        <div id="log-output"></div>
+      </div>
+    </section>
+
+  </div><!-- /.layout -->
 
   <script>
-    // ── Watcher toggles ──────────────────────────────────────────────────────
+    // ── Watchers ─────────────────────────────────────────────────────────────
     function applyStatus(data) {
       for (const [key, enabled] of Object.entries(data)) {
-        const badge = document.getElementById('badge-' + key);
-        const btn   = document.getElementById('btn-'   + key);
-        if (!badge) continue;
-        badge.textContent = enabled ? 'ON' : 'OFF';
-        badge.className   = 'badge ' + (enabled ? 'on' : 'off');
-        btn.textContent   = enabled ? 'Disable' : 'Enable';
-        btn.className     = enabled ? 'btn-disable' : 'btn-enable';
+        const chk = document.getElementById('toggle-' + key);
+        if (!chk) continue;
+        chk.checked = !!enabled;
       }
     }
     function refresh() {
-      fetch('/api/status').then(r => r.json()).then(applyStatus);
+      fetch('/api/status').then(r => r.json()).then(applyStatus).catch(() => {});
     }
     function toggle(watcher) {
-      fetch('/api/toggle/' + watcher, {method: 'POST'})
-        .then(r => r.json()).then(applyStatus);
+      fetch('/api/toggle/' + watcher, { method: 'POST' })
+        .then(r => r.json()).then(applyStatus).catch(() => {});
     }
+
+    // ── Restart ───────────────────────────────────────────────────────────────
+    function restart() {
+      const btn = document.getElementById('btn-restart');
+      btn.textContent = 'Restarting…';
+      btn.disabled = true;
+      fetch('/api/restart', { method: 'POST' })
+        .catch(() => {})
+        .finally(() => setTimeout(() => { btn.textContent = 'Restart'; btn.disabled = false; }, 3000));
+    }
+
+    // ── Manual organize ───────────────────────────────────────────────────────
     function organizeManual() {
-      const path = document.getElementById('organize-path').value.trim();
-      if (!path) return;
+      const input = document.getElementById('organize-path');
+      const path  = input.value.trim();
+      if (!path) { input.focus(); return; }
       const btn = document.getElementById('btn-organize');
       btn.textContent = 'Running…';
       btn.disabled = true;
       fetch('/api/organize', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({path})
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path })
       })
-        .then(r => r.json())
-        .catch(() => ({}))
+        .catch(() => {})
         .finally(() => { btn.textContent = 'Organize'; btn.disabled = false; });
     }
+    document.getElementById('organize-path')
+      .addEventListener('keydown', e => { if (e.key === 'Enter') organizeManual(); });
 
-    function restart() {
-      const btn = document.getElementById('btn-restart');
-      btn.textContent = 'Restarting…';
-      btn.disabled = true;
-      fetch('/api/restart', {method: 'POST'})
-        .catch(() => {})
-        .finally(() => setTimeout(() => { btn.textContent = 'Restart'; btn.disabled = false; }, 3000));
-    }
-
-    // ── Log panel ────────────────────────────────────────────────────────────
+    // ── Logs ──────────────────────────────────────────────────────────────────
     let lastId = 0;
     const output = document.getElementById('log-output');
+
+    function clearLog() { output.innerHTML = ''; }
 
     function appendLogs(entries) {
       if (!entries.length) return;
       const atBottom = output.scrollHeight - output.scrollTop <= output.clientHeight + 4;
       for (const e of entries) {
-        const line = document.createElement('div');
-        line.className = 'log-' + e.type;
-        const ts     = `<span class="log-ts">${e.ts}</span>`;
-        const prefix = e.prefix ? `<span class="log-prefix">${e.prefix}</span>` : '';
+        const line   = document.createElement('div');
+        line.className = 'log-line log-' + e.type;
+        const ts     = `<span class="log-ts">${escHtml(e.ts)}</span>`;
+        const prefix = e.prefix ? `<span class="log-prefix">${escHtml(e.prefix)}</span>` : '';
         const label  = e.type === 'error' ? 'ERROR: ' : '';
-        line.innerHTML = ts + prefix + label + escHtml(e.message);
+        line.innerHTML = `${ts}${prefix}<span class="log-msg">${label}${escHtml(e.message)}</span>`;
         output.appendChild(line);
         lastId = e.id;
       }
@@ -168,20 +428,18 @@
     }
 
     function escHtml(s) {
-      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     function pollLogs() {
       fetch('/api/logs?after=' + lastId)
-        .then(r => r.json())
-        .then(appendLogs)
-        .catch(() => {});
+        .then(r => r.json()).then(appendLogs).catch(() => {});
     }
 
     refresh();
     pollLogs();
-    setInterval(refresh,   5000);
-    setInterval(pollLogs,  2000);
+    setInterval(refresh,  5000);
+    setInterval(pollLogs, 2000);
   </script>
 </body>
 </html>
