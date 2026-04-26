@@ -2,43 +2,43 @@ import subprocess
 import sys
 import threading
 
+from core import log
+
 # Run startup.py first (blocks until done)
-print("Running startup.py...")
+log("Running startup.py...")
 result = subprocess.run([sys.executable, "-u", "/app/startup.py"])
 if result.returncode != 0:
     sys.exit(result.returncode)
 
 # Import after startup so JDownloader is ready
 import state
-import watcher_linkgrabber
-import watcher_downloads
-import watcher_dialogs
 import settings
-from webui import app
+from watchers import dialogs, downloads, linkgrabber
+from web import app
 
-print("Starting watchers...")
+log("Starting watchers...")
 threading.Thread(
-    target=watcher_linkgrabber.run,
-    args=(state.linkgrabber_enabled,),
+    target=linkgrabber.run,
+    args=(state.get_event("linkgrabber"),),
     daemon=True,
     name="watcher-linkgrabber",
 ).start()
 
 threading.Thread(
-    target=watcher_downloads.run,
-    args=(state.downloads_enabled,),
+    target=downloads.run,
+    args=(state.get_event("downloads"),),
     daemon=True,
     name="watcher-downloads",
 ).start()
 
 threading.Thread(
-    target=watcher_dialogs.run,
-    args=(state.dialogs_enabled,),
+    target=dialogs.run,
+    args=(state.get_event("dialogs"),),
     daemon=True,
     name="watcher-dialogs",
 ).start()
 
-print("Starting web UI on port 8080...")
+log("Starting web UI on port 8080...")
 if settings.DEBUG:
     app.run(host="0.0.0.0", port=8080, debug=True)
 else:

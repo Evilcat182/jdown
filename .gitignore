@@ -1,5 +1,6 @@
 .env
 TODO
+config/jbot/jbot.json
 
 # Keep these directories in git while ignoring their runtime contents.
 config/jdownloader/**
