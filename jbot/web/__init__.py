@@ -1,9 +1,11 @@
 import os
 import sys
 import threading
+from pathlib import Path
 from flask import Flask, jsonify, render_template, request
 import state
 from core import log, get_logs
+from media.organizer import organize
 
 app = Flask(__name__)
 
@@ -48,3 +50,13 @@ def api_restart():
     log("Restarting…", PREFIX, "warning")
     threading.Timer(0.3, lambda: os.execv(sys.executable, [sys.executable] + sys.argv)).start()
     return jsonify({"restarting": True})
+
+
+@app.route("/api/organize", methods=["POST"])
+def api_organize():
+    data = request.get_json(silent=True) or {}
+    path = (data.get("path") or "").strip()
+    if not path:
+        return jsonify({"error": "path is required"}), 400
+    threading.Thread(target=organize, args=(Path(path),), daemon=True).start()
+    return jsonify({"started": True, "path": path})

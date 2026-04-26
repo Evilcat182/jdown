@@ -86,6 +86,15 @@
     <button class="btn-restart" id="btn-restart" onclick="restart()">Restart</button>
   </div>
 
+  <div class="card" style="flex-direction: column; align-items: stretch; gap: 10px;">
+    <span class="label" title="Manually organize a folder by path">Manual Organize</span>
+    <div style="display: flex; gap: 8px;">
+      <input id="organize-path" type="text" placeholder="/path/to/folder"
+             style="flex: 1; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.85rem;">
+      <button id="btn-organize" onclick="organizeManual()" style="background: #0d6efd; color: #fff;">Organize</button>
+    </div>
+  </div>
+
   </div><!-- /.controls -->
 
   <div id="log-panel">
@@ -113,6 +122,22 @@
       fetch('/api/toggle/' + watcher, {method: 'POST'})
         .then(r => r.json()).then(applyStatus);
     }
+    function organizeManual() {
+      const path = document.getElementById('organize-path').value.trim();
+      if (!path) return;
+      const btn = document.getElementById('btn-organize');
+      btn.textContent = 'Running…';
+      btn.disabled = true;
+      fetch('/api/organize', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({path})
+      })
+        .then(r => r.json())
+        .catch(() => ({}))
+        .finally(() => { btn.textContent = 'Organize'; btn.disabled = false; });
+    }
+
     function restart() {
       const btn = document.getElementById('btn-restart');
       btn.textContent = 'Restarting…';
