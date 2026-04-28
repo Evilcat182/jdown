@@ -5,7 +5,22 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template, request
 import state
 from core import log, get_logs
-from media.organizer import organize
+from media.organizer import organize, _guessit, MEDIA_CONFIDENCE_FIELDS
+
+SCAN_PATH = os.getenv("SCAN_PATH", "/output")
+
+
+def _serialize_guessit(info: dict) -> dict:
+    """Convert a guessit result dict to plain JSON-serializable types."""
+    result = {}
+    for k, v in info.items():
+        if isinstance(v, (str, int, float, bool, type(None))):
+            result[k] = v
+        elif isinstance(v, list):
+            result[k] = [i if isinstance(i, (str, int, float, bool, type(None))) else str(i) for i in v]
+        else:
+            result[k] = str(v)
+    return result
 
 app = Flask(__name__)
 
@@ -52,11 +67,55 @@ def api_restart():
     return jsonify({"restarting": True})
 
 
+@app.route("/api/scan")
+def api_scan():
+    scan_dir = Path(SCAN_PATH)
+    if not scan_dir.is_dir():
+        return jsonify({"error": f"Scan path '{SCAN_PATH}' not found"}), 404
+
+    # Determine which top-level subdirs to skip (e.g. the organised destinations)
+    skip_tops: set[Path] = set()
+    for dest_env in ("MOVIE_DESTINATION", "SERIES_DESTINATION"):
+        dest = os.getenv(dest_env, "")
+        if not dest:
+            continue
+        dest_path = Path(dest)
+        try:
+            rel = dest_path.relative_to(scan_dir)
+            skip_tops.add(scan_dir / rel.parts[0])
+        except ValueError:
+            pass
+
+    results = []
+    for entry in sorted(scan_dir.iterdir()):
+        if not entry.is_dir() or entry in skip_tops:
+            continue
+        try:
+            info = _serialize_guessit(dict(_guessit(entry.name)))
+        except Exception:
+            info = {}
+        results.append({
+            "path": str(entry),
+            "name": entry.name,
+            "type": info.get("type"),
+            "has_confidence": bool(MEDIA_CONFIDENCE_FIELDS.intersection(info)),
+            "info": info,
+        })
+
+    return jsonify(results)
+
+
 @app.route("/api/organize", methods=["POST"])
 def api_organize():
     data = request.get_json(silent=True) or {}
     path = (data.get("path") or "").strip()
     if not path:
         return jsonify({"error": "path is required"}), 400
-    threading.Thread(target=organize, args=(Path(path),), daemon=True).start()
+    info_override = data.get("info") or None
+    threading.Thread(
+        target=organize,
+        args=(Path(path),),
+        kwargs={"info_override": info_override},
+        daemon=True,
+    ).start()
     return jsonify({"started": True, "path": path})

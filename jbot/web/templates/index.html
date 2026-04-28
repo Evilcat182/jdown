@@ -238,12 +238,117 @@
     .log-success .log-msg { color: #34d399; }
     .log-success .log-prefix { color: #34d399; }
 
+    /* ── Scan results ─────────────────────────────────────────────────────────── */
+    .scan-results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 14px 0 10px;
+    }
+    .scan-count { font-size: 12px; color: var(--text-2); }
+    .scan-list  { display: flex; flex-direction: column; gap: 8px; }
+    .scan-empty {
+      text-align: center;
+      padding: 22px;
+      color: var(--text-3);
+      font-size: 13px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .scan-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .scan-item.low-confidence { border-color: rgba(245,158,11,.35); }
+    .scan-item.organized      { border-color: rgba(34,197,94,.35); opacity: .65; }
+
+    .scan-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .scan-item-name {
+      font-size: 12px;
+      font-family: 'JetBrains Mono','Fira Code','Courier New',monospace;
+      color: var(--text-1);
+      word-break: break-all;
+      flex: 1;
+      min-width: 0;
+    }
+    .scan-item-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .type-badge {
+      font-size: 9.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .type-movie   { background: rgba(99,102,241,.2);  color: #a5b4fc; }
+    .type-episode { background: rgba(34,197,94,.14);  color: #6ee7b7; }
+    .type-unknown { background: var(--surface-2);     color: var(--text-3); }
+    .warn-badge {
+      font-size: 9.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(245,158,11,.14); color: var(--amber);
+    }
+
+    .scan-fields {
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px 10px;
+    }
+    .field-group    { display: flex; flex-direction: column; gap: 3px; }
+    .field-label    {
+      font-size: 9.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-3);
+    }
+    .field-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text-1);
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+    .field-input:focus   { border-color: var(--accent); }
+    .field-input::placeholder { color: var(--text-3); }
+    .field-select { cursor: pointer; appearance: none; }
+
+    .scan-item-footer {
+      padding: 9px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn-sm { padding: 5px 13px; font-size: 12px; }
+
     /* ── Responsive ──────────────────────────────────────────────────────────── */
     @media (max-width: 480px) {
       body { padding: 20px 12px 48px; }
       .action-grid { grid-template-columns: 1fr; }
       .action-card.full { grid-column: auto; }
       .input-row { flex-direction: column; }
+      .scan-fields { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -331,16 +436,17 @@
       <div class="action-grid">
 
         <div class="action-card full">
-          <div class="action-title">Organize a folder</div>
-          <div class="input-row">
-            <input id="organize-path" class="path-input" type="text"
-                   placeholder="/downloads/My.Show.S01E01.1080p"
-                   spellcheck="false" autocomplete="off">
-            <button id="btn-organize" class="btn btn-primary" onclick="organizeManual()">Organize</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="action-title" style="margin-bottom:4px;">Scan Output Folder</div>
+              <div class="action-desc" style="margin-bottom:0;">Detect downloaded media in <code style="font-size:11px;color:var(--text-2);">/output</code>, review &amp; edit properties, then organize.</div>
+            </div>
+            <button id="btn-scan" class="btn btn-primary" style="margin-left:16px;flex-shrink:0;" onclick="scanFolder()">Scan</button>
           </div>
         </div>
 
       </div>
+      <div id="scan-results"></div>
     </section>
 
     <!-- Log -->
@@ -386,24 +492,178 @@
         .finally(() => setTimeout(() => { btn.textContent = 'Restart'; btn.disabled = false; }, 3000));
     }
 
-    // ── Manual organize ───────────────────────────────────────────────────────
-    function organizeManual() {
-      const input = document.getElementById('organize-path');
-      const path  = input.value.trim();
-      if (!path) { input.focus(); return; }
-      const btn = document.getElementById('btn-organize');
+    // ── Scan ──────────────────────────────────────────────────────────────────
+    let _scanItems = [];
+
+    function scanFolder() {
+      const btn = document.getElementById('btn-scan');
+      btn.textContent = 'Scanning…';
+      btn.disabled = true;
+      document.getElementById('scan-results').innerHTML = '';
+      fetch('/api/scan')
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          _scanItems = data;
+          renderScanResults(data);
+        })
+        .catch(err => {
+          document.getElementById('scan-results').innerHTML =
+            `<div class="scan-empty" style="color:var(--red);">Scan failed: ${escHtml(String(err))}</div>`;
+        })
+        .finally(() => { btn.textContent = 'Scan'; btn.disabled = false; });
+    }
+
+    function renderScanResults(items) {
+      const container = document.getElementById('scan-results');
+      if (!items.length) {
+        container.innerHTML = '<div class="scan-empty">No media folders found in /output.</div>';
+        return;
+      }
+      const header = `
+        <div class="scan-results-header">
+          <span class="scan-count">${items.length} folder${items.length !== 1 ? 's' : ''} found</span>
+          <button class="btn btn-primary btn-sm" onclick="organizeAll()">Organize All</button>
+        </div>`;
+      const list = items.map((item, i) => renderScanItem(item, i)).join('');
+      container.innerHTML = header + '<div class="scan-list">' + list + '</div>';
+    }
+
+    function renderScanItem(item, i) {
+      const type = item.type || '';
+      const badgeClass = type === 'movie' ? 'type-movie' : type === 'episode' ? 'type-episode' : 'type-unknown';
+      const badgeLabel = type || 'unknown';
+      const warnBadge  = item.has_confidence ? '' : '<span class="warn-badge">low confidence</span>';
+      const info = item.info || {};
+      const lowCls = item.has_confidence ? '' : ' low-confidence';
+
+      const v = (key, fallback = '') => escHtml(String(info[key] ?? fallback));
+      const inp = (cls, key, placeholder = '') =>
+        `<input class="field-input ${cls}" value="${v(key)}" placeholder="${escHtml(placeholder)}">`;
+      const episodeOnlyStyle = type !== 'episode' ? ' style="display:none"' : '';
+
+      return `
+      <div class="scan-item${lowCls}" id="scan-item-${i}">
+        <div class="scan-item-header">
+          <span class="scan-item-name">${escHtml(item.name)}</span>
+          <div class="scan-item-badges">
+            ${warnBadge}
+            <span class="type-badge ${badgeClass}">${badgeLabel}</span>
+          </div>
+        </div>
+        <div class="scan-fields">
+
+          <div class="field-group">
+            <label class="field-label">Type</label>
+            <select class="field-input field-select field-type" onchange="onTypeChange(this,${i})">
+              <option value="movie"   ${type==='movie'   ? 'selected' : ''}>Movie</option>
+              <option value="episode" ${type==='episode' ? 'selected' : ''}>Episode</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Title</label>
+            ${inp('field-title', 'title')}
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Year</label>
+            ${inp('field-year', 'year', 'e.g. 2024')}
+          </div>
+
+          <div class="field-group field-ep"${episodeOnlyStyle}>
+            <label class="field-label">Season</label>
+            ${inp('field-season', 'season', 'e.g. 1')}
+          </div>
+
+          <div class="field-group field-ep"${episodeOnlyStyle}>
+            <label class="field-label">Episode</label>
+            ${inp('field-episode', 'episode', 'e.g. 4')}
+          </div>
+
+          <div class="field-group field-ep"${episodeOnlyStyle}>
+            <label class="field-label">Episode Title</label>
+            ${inp('field-episode-title', 'episode_title')}
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Resolution</label>
+            ${inp('field-screen-size', 'screen_size', 'e.g. 1080p')}
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Video Codec</label>
+            ${inp('field-video-codec', 'video_codec', 'e.g. x265')}
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Source</label>
+            ${inp('field-source', 'source', 'e.g. BluRay')}
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Audio Codec</label>
+            ${inp('field-audio-codec', 'audio_codec', 'e.g. DTS')}
+          </div>
+
+        </div>
+        <div class="scan-item-footer">
+          <button class="btn btn-primary btn-sm btn-org" onclick="organizeItem(${i})">Organize</button>
+        </div>
+      </div>`;
+    }
+
+    function onTypeChange(sel, i) {
+      const card = document.getElementById('scan-item-${i}'.replace('${i}', i));
+      const isEpisode = sel.value === 'episode';
+      card.querySelectorAll('.field-ep').forEach(el => el.style.display = isEpisode ? '' : 'none');
+      // Update badge
+      const badge = card.querySelector('.type-badge');
+      badge.className = 'type-badge ' + (isEpisode ? 'type-episode' : 'type-movie');
+      badge.textContent = sel.value;
+    }
+
+    function getItemInfo(i) {
+      const card = document.getElementById('scan-item-' + i);
+      const gv = cls => (card.querySelector('.' + cls)?.value ?? '').trim();
+      return {
+        type:          gv('field-type') || undefined,
+        title:         gv('field-title') || undefined,
+        year:          gv('field-year') || undefined,
+        season:        gv('field-season') || undefined,
+        episode:       gv('field-episode') || undefined,
+        episode_title: gv('field-episode-title') || undefined,
+        screen_size:   gv('field-screen-size') || undefined,
+        video_codec:   gv('field-video-codec') || undefined,
+        source:        gv('field-source') || undefined,
+        audio_codec:   gv('field-audio-codec') || undefined,
+      };
+    }
+
+    function organizeItem(i) {
+      const item = _scanItems[i];
+      if (!item) return;
+      const info = getItemInfo(i);
+      const card = document.getElementById('scan-item-' + i);
+      const btn  = card.querySelector('.btn-org');
       btn.textContent = 'Running…';
       btn.disabled = true;
       fetch('/api/organize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path })
+        body: JSON.stringify({ path: item.path, info }),
       })
         .catch(() => {})
-        .finally(() => { btn.textContent = 'Organize'; btn.disabled = false; });
+        .finally(() => {
+          btn.textContent = 'Organize';
+          btn.disabled = false;
+          card.classList.add('organized');
+        });
     }
-    document.getElementById('organize-path')
-      .addEventListener('keydown', e => { if (e.key === 'Enter') organizeManual(); });
+
+    function organizeAll() {
+      _scanItems.forEach((_, i) => organizeItem(i));
+    }
 
     // ── Logs ──────────────────────────────────────────────────────────────────
     let lastId = 0;

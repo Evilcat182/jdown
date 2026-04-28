@@ -253,7 +253,7 @@ def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excl
     return moved
 
 
-def organize(src: Path):
+def organize(src: Path, info_override: dict = None):
     src = Path(src)
 
     if not src.is_dir():
@@ -263,6 +263,31 @@ def organize(src: Path):
     log(f"Processing '{src.name}'...", PREFIX)
 
     info = dict(_guessit(src.name))
+
+    if info_override:
+        # Coerce numeric fields that arrive as strings from the web form
+        for int_field in ("year", "season", "episode"):
+            if int_field in info_override and info_override[int_field] not in (None, ""):
+                try:
+                    info_override[int_field] = int(info_override[int_field])
+                except (TypeError, ValueError):
+                    info_override.pop(int_field, None)
+        info.update({k: v for k, v in info_override.items() if v is not None and str(v).strip() != ""})
+        # Recompute derived fields after merge
+        if info.get("title"):
+            info["dotted_title"] = info["title"].replace(" ", ".")
+        if info.get("episode_title"):
+            info["dotted_episode_title"] = info["episode_title"].replace(" ", ".")
+        if info.get("year"):
+            info["year_in_brackets"] = f"({info['year']})"
+        season = info.get("season")
+        episode = info.get("episode")
+        if season and episode:
+            try:
+                info["season_and_episode"] = f"S{int(season):02}E{int(episode):02}"
+            except (TypeError, ValueError):
+                pass
+
     media_type = info.get("type")
 
     if not MEDIA_CONFIDENCE_FIELDS.intersection(info):
