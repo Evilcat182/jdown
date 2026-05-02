@@ -26,6 +26,8 @@ PLEX_API_ROOT=
 PLEX_TOKEN=
 FF_OPEN_URL=
 DEBUG=0
+PROXY_USER=
+PROXY_PASSWORD=
 ```
 
 Required:
@@ -47,6 +49,8 @@ Optional:
 - PLEX_TOKEN — Plex authentication token
 - FF_OPEN_URL — URL(s) Firefox opens on start; separate multiple with `|`
 - DEBUG — set to `1` to enable verbose debug logging (default: `0`)
+- PROXY_USER — username for the mobile HTTP proxy (port 8888)
+- PROXY_PASSWORD — password for the mobile HTTP proxy (port 8888)
 
 ## 2. Start the stack
 
@@ -100,3 +104,37 @@ From here you can enable or disable:
 - **Invoke Plex Media Scan** — trigger a Plex library scan after a successful download
 - **Delete downloaded source** — remove the source folder after a successful copy
 - **Auto-answer Dialogs** — automatically confirm JDownloader dialogs (e.g. external link requests)
+
+## 6. Browsing through VPN
+
+Some mobile first suckers like my friend lexar prefere the mobile browsing expirience, because they are unwilling to lift their lazy asses of the coach.
+<br>Well fear no more lazy bastards ...<br>
+The stack exposes an HTTP proxy on port **8888** (via gluetun, so all traffic goes through the VPN).
+
+### 6.1 System-wide proxy
+
+Configure your device's Wi-Fi proxy settings to route all traffic through the VPN:
+
+| Field    | Value                       |
+|----------|-----------------------------|
+| Host     | `HOST-IP`                   |
+| Port     | `8888`                      |
+
+**iOS:** Settings → Wi-Fi → tap your network → Configure Proxy → Manual  
+**Android:** Settings → Wi-Fi → long-press your network → Modify → Advanced → Proxy → Manual
+
+### 6.2 Browser proxy (Firefox)
+
+To use the proxy only in Firefox without changing system settings, configure it via `about:config`:
+
+| Preference                                | Value     |
+|-------------------------------------------|-----------|
+| `network.proxy.type`                      | `1`       |
+| `network.proxy.http`                      | `HOST-IP` |
+| `network.proxy.http_port`                 | `8888`    |
+| `network.proxy.ssl`                       | `HOST-IP` |
+| `network.proxy.ssl_port`                  | `8888`    |
+| `network.proxy.allow_hijacking_localhost` | `true`    |
+
+> **Note:** `network.proxy.allow_hijacking_localhost` must be `true` to allow Click & Load to work —  
+> Firefox blocks proxy forwarding of `127.0.0.1` requests by default, regardless of other proxy settings.

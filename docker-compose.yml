@@ -15,6 +15,9 @@ services:
       - OPENVPN_USER=${OPENVPN_USER}
       - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
       - SERVER_COUNTRIES=Switzerland
+      # ── Built-in HTTP proxy (for mobile device proxy settings) ──────────────
+      - HTTPPROXY=on
+      - HTTPPROXY_LISTENING_ADDRESS=:8888
     healthcheck:
       test: /gluetun-entrypoint healthcheck
       interval: 10s
@@ -22,9 +25,11 @@ services:
       start_period: 10s
       retries: 3
     ports:
-      - 5800:5800
-      - 5801:5801
-      - 3128:3128
+      - 5800:5800   # Jdownloader WebUI 
+      - 5801:5801   # Firefox WebUI
+      - 3128:3128   # Jdownloader API Port (jbot uses this)
+      - 8888:8888   # HTTP proxy for mobile browsers
+      - 9666:9666   # JDownloader Click & Load
     restart: unless-stopped
 
   firefox:
