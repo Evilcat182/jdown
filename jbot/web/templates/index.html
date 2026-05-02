@@ -78,6 +78,13 @@
     .icon-btn:hover { color: var(--text-1); background: var(--surface-2); border-color: var(--border-2); }
     .icon-btn svg { width: 16px; height: 16px; }
 
+    .btn-danger {
+      background: transparent; color: var(--red);
+      border: 1px solid rgba(239,68,68,.25);
+    }
+    .btn-danger:hover:not(:disabled) { background: rgba(239,68,68,.08); }
+    .btn-sm { padding: 5px 11px; font-size: 12px; }
+
     /* ── Section label ─────────────────────────────────────────────────────── */
     .section-label {
       font-size: 10.5px; font-weight: 600;
@@ -277,12 +284,15 @@
           <div class="brand-sub">Download automation</div>
         </div>
       </div>
-      <a href="/settings" class="icon-btn" title="Settings">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn btn-danger btn-sm" onclick="restart()">Restart</button>
+        <a href="/settings" class="icon-btn" title="Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
       </a>
+      </div>
     </header>
 
     <!-- Scan -->
@@ -501,6 +511,23 @@
     function pollLogs() {
       fetch('/api/logs?after=' + lastId)
         .then(r => r.json()).then(appendLogs).catch(() => {});
+    }
+
+    // ── Restart ───────────────────────────────────────────────────────────────
+    function restart() {
+      const btn = event.currentTarget;
+      btn.textContent = 'Restarting…';
+      btn.disabled = true;
+      fetch('/api/restart', { method: 'POST' })
+        .catch(() => {})
+        .finally(() => {
+          // Poll until the server is back up, then reload
+          const poll = setInterval(() => {
+            fetch('/api/logs?after=0')
+              .then(() => { clearInterval(poll); location.reload(); })
+              .catch(() => {});
+          }, 1000);
+        });
     }
 
     pollLogs();

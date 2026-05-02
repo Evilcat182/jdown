@@ -290,7 +290,6 @@
         </a>
         <div class="page-title">Settings</div>
       </div>
-      <button class="btn btn-danger btn-sm" onclick="restart()">Restart</button>
     </header>
 
     <!-- Automation toggles -->
@@ -556,13 +555,6 @@
     function toggle(watcher) {
       fetch('/api/toggle/' + watcher, { method: 'POST' })
         .then(r => r.json()).then(applyStatus).catch(() => {});
-    }
-
-    // ── Restart ───────────────────────────────────────────────────────────────
-    function restart() {
-      if (!confirm('Restart jbot?')) return;
-      fetch('/api/restart', { method: 'POST' }).catch(() => {});
-      showToast('Restarting…', 'ok');
     }
 
     // ── Excludes table ────────────────────────────────────────────────────────
