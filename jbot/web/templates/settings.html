@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>jbot – Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0d0d10;
+      --surface:    #17171c;
+      --surface-2:  #1f1f26;
+      --border:     #2a2a34;
+      --border-2:   #35353f;
+      --text-1:     #ededf0;
+      --text-2:     #8e8e9e;
+      --text-3:     #55555f;
+      --accent:     #6366f1;
+      --accent-h:   #4f46e5;
+      --green:      #22c55e;
+      --amber:      #f59e0b;
+      --red:        #ef4444;
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-1);
+      min-height: 100vh;
+      padding: 32px 16px 64px;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .layout {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* ── Header ───────────────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 4px;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+
+    .back-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-2);
+      text-decoration: none;
+      transition: color 0.13s, background 0.13s, border-color 0.13s;
+      flex-shrink: 0;
+    }
+    .back-btn:hover { color: var(--text-1); background: var(--surface-2); border-color: var(--border-2); }
+    .back-btn svg { width: 16px; height: 16px; }
+
+    .page-title { font-size: 17px; font-weight: 600; letter-spacing: -0.025em; }
+
+    /* ── Buttons ───────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 8px 16px;
+      border: none; border-radius: 7px;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer;
+      transition: background 0.13s, opacity 0.13s, color 0.13s;
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-h); }
+    .btn-ghost {
+      background: var(--surface-2); color: var(--text-2);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) { background: var(--border); color: var(--text-1); }
+    .btn-danger {
+      background: transparent; color: var(--red);
+      border: 1px solid rgba(239,68,68,.25);
+    }
+    .btn-danger:hover:not(:disabled) { background: rgba(239,68,68,.08); }
+    .btn-sm { padding: 5px 11px; font-size: 12px; }
+    .btn-icon {
+      padding: 5px 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-3);
+    }
+    .btn-icon:hover { color: var(--red); border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.07); }
+    .btn-icon svg { width: 13px; height: 13px; }
+
+    /* ── Section label ─────────────────────────────────────────────────────── */
+    .section-label {
+      font-size: 10.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--text-3);
+      margin-bottom: 8px;
+    }
+
+    /* ── Card list (toggles) ───────────────────────────────────────────────── */
+    .card-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .toggle-row {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 16px;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-row:hover { background: var(--surface-2); }
+
+    .toggle-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .toggle-name { font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .toggle-desc { font-size: 11.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Toggle switch */
+    .switch { position: relative; display: inline-block; width: 38px; height: 21px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .slider {
+      position: absolute; inset: 0;
+      cursor: pointer;
+      background: var(--border-2);
+      border-radius: 21px;
+      transition: background 0.18s;
+    }
+    .slider::before {
+      content: '';
+      position: absolute;
+      width: 15px; height: 15px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.18s cubic-bezier(.4,0,.2,1);
+      box-shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+    input:checked + .slider { background: var(--accent); }
+    input:checked + .slider::before { transform: translateX(17px); }
+    input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ── Settings card ─────────────────────────────────────────────────────── */
+    .settings-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .settings-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      align-items: start;
+      gap: 12px 16px;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-key {
+      font-size: 12.5px; font-weight: 500;
+      color: var(--text-1);
+      padding-top: 6px;
+    }
+    .settings-hint { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+    /* ── Inputs ────────────────────────────────────────────────────────────── */
+    .text-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 10px;
+      font-size: 12.5px; font-family: inherit;
+      color: var(--text-1); outline: none;
+      transition: border-color 0.15s;
+    }
+    .text-input:focus { border-color: var(--accent); }
+    .text-input::placeholder { color: var(--text-3); }
+    .mono { font-family: 'JetBrains Mono','Fira Code','Courier New',monospace; font-size: 12px; }
+
+    /* ── Tag-list input (comma-separated arrays) ───────────────────────────── */
+    .tag-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono','Fira Code','Courier New',monospace;
+      color: var(--text-1); outline: none;
+      transition: border-color 0.15s;
+    }
+    .tag-input:focus { border-color: var(--accent); }
+    .tag-hint { font-size: 10.5px; color: var(--text-3); margin-top: 4px; }
+
+    /* ── Excludes table ────────────────────────────────────────────────────── */
+    .excludes-table { width: 100%; border-collapse: collapse; }
+    .excludes-table th {
+      font-size: 9.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-3);
+      padding: 0 0 6px 0;
+      text-align: left;
+    }
+    .excludes-table td { padding: 3px 6px 3px 0; vertical-align: middle; }
+    .excludes-table td:last-child { padding-right: 0; }
+    .ex-pattern { width: 100%; }
+    .ex-check { width: 36px; text-align: center; }
+    .ex-check input[type=checkbox] {
+      width: 15px; height: 15px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .ex-del { width: 32px; text-align: right; }
+    .ex-add-row { margin-top: 8px; }
+
+    /* ── Toast ─────────────────────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 100;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    #toast.ok   { color: #34d399; border-color: rgba(52,211,153,.35); }
+    #toast.err  { color: #f87171; border-color: rgba(248,113,113,.35); }
+
+    /* ── Sticky save bar ───────────────────────────────────────────────────── */
+    .save-bar {
+      position: sticky;
+      bottom: 0;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 14px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 -16px;
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+    .save-status { font-size: 12px; color: var(--text-3); }
+
+    @media (max-width: 520px) {
+      .settings-row { grid-template-columns: 1fr; }
+      .settings-key { padding-top: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <a href="/" class="back-btn" title="Back to home">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </a>
+        <div class="page-title">Settings</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="restart()">Restart</button>
+    </header>
+
+    <!-- Automation toggles -->
+    <section>
+      <div class="section-label">Automation</div>
+      <div class="card-list">
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-name">Autostart Downloads</span>
+            <span class="toggle-desc">Automatically start queued links</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-linkgrabber" onchange="toggle('linkgrabber')">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-name">Auto-organize on Finish</span>
+            <span class="toggle-desc">Rename, clean up and move completed downloads</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-downloads" onchange="toggle('downloads')">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-name">Plex Library Scan</span>
+            <span class="toggle-desc">Trigger a Plex scan after each organize</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-plex" onchange="toggle('plex')">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-name">Delete Source After Copy</span>
+            <span class="toggle-desc">Remove the download folder once moved</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-delete_source" onchange="toggle('delete_source')">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-name">Auto-answer Dialogs</span>
+            <span class="toggle-desc">Dismiss JDownloader prompts automatically</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-dialogs" onchange="toggle('dialogs')">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Paths -->
+    <section>
+      <div class="section-label">Paths</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Scan path</div>
+            <div class="settings-hint">Root folder to scan for downloaded media</div>
+          </div>
+          <input class="text-input mono" id="s-scan_path" placeholder="/output">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Movie destination</div>
+            <div class="settings-hint">Where organized movies are moved to</div>
+          </div>
+          <input class="text-input mono" id="s-movie_destination" placeholder="/output/done">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Series destination</div>
+            <div class="settings-hint">Where organized TV series are moved to</div>
+          </div>
+          <input class="text-input mono" id="s-series_destination" placeholder="/output/done">
+        </div>
+      </div>
+    </section>
+
+    <!-- Plex -->
+    <section>
+      <div class="section-label">Plex</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">API root</div>
+            <div class="settings-hint">e.g. http://plex:32400</div>
+          </div>
+          <input class="text-input mono" id="s-plex_api_root" placeholder="http://plex:32400">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Movie library</div>
+            <div class="settings-hint">Exact library name in Plex</div>
+          </div>
+          <input class="text-input" id="s-plex_movie_lib_name" placeholder="Movies">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">TV library</div>
+            <div class="settings-hint">Exact library name in Plex</div>
+          </div>
+          <input class="text-input" id="s-plex_show_lib_name" placeholder="TV Shows">
+        </div>
+      </div>
+    </section>
+
+    <!-- Movie organizer -->
+    <section>
+      <div class="section-label">Organizer – Movies</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Folder template</div>
+            <div class="settings-hint">Name of the folder created for the movie</div>
+          </div>
+          <input class="text-input mono" id="s-movie_folder_template">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">File template</div>
+            <div class="settings-hint">Rename template for the video file</div>
+          </div>
+          <input class="text-input mono" id="s-movie_file_template">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Mandatory fields</div>
+            <div class="settings-hint">Abort if any of these are missing</div>
+          </div>
+          <div>
+            <input class="tag-input" id="s-movie_mandatory" placeholder="title, year, video_codec">
+            <div class="tag-hint">Comma-separated field names</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Series organizer -->
+    <section>
+      <div class="section-label">Organizer – Series</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Show folder template</div>
+          </div>
+          <input class="text-input mono" id="s-series_folder_template">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">File template</div>
+          </div>
+          <input class="text-input mono" id="s-series_file_template">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Episode folder template</div>
+          </div>
+          <input class="text-input mono" id="s-series_ep_folder_template">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Mandatory fields</div>
+            <div class="settings-hint">Abort if any of these are missing</div>
+          </div>
+          <div>
+            <input class="tag-input" id="s-series_mandatory" placeholder="title, season_and_episode">
+            <div class="tag-hint">Comma-separated field names</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Exclusions -->
+    <section>
+      <div class="section-label">Exclusions</div>
+      <div class="settings-card">
+        <div style="padding:14px 18px;">
+          <table class="excludes-table" id="excludes-table">
+            <thead>
+              <tr>
+                <th>Pattern</th>
+                <th class="ex-check" title="Match directories only">Dir</th>
+                <th class="ex-check" title="Case-sensitive">CS</th>
+                <th class="ex-del"></th>
+              </tr>
+            </thead>
+            <tbody id="excludes-body"></tbody>
+          </table>
+          <div class="ex-add-row">
+            <button class="btn btn-ghost btn-sm" onclick="addExcludeRow()">+ Add row</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lists -->
+    <section>
+      <div class="section-label">File matching</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Video extensions</div>
+            <div class="settings-hint">Extensions treated as video files</div>
+          </div>
+          <div>
+            <input class="tag-input" id="s-video_extensions" placeholder=".mkv, .mp4, .avi">
+            <div class="tag-hint">Comma-separated, include the dot</div>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Confidence fields</div>
+            <div class="settings-hint">Fields that indicate high-quality guessit detection</div>
+          </div>
+          <div>
+            <input class="tag-input" id="s-media_confidence_fields" placeholder="screen_size, video_codec">
+            <div class="tag-hint">Comma-separated field names</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Save bar -->
+    <div class="save-bar">
+      <span class="save-status" id="save-status"></span>
+      <button class="btn btn-primary" id="btn-save" onclick="saveSettings()">Save settings</button>
+    </div>
+
+  </div><!-- /.layout -->
+
+  <div id="toast"></div>
+
+  <script>
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function showToast(msg, type = 'ok') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'show ' + type;
+      clearTimeout(t._tid);
+      t._tid = setTimeout(() => { t.className = ''; }, 2800);
+    }
+
+    function splitTags(str) {
+      return str.split(',').map(s => s.trim()).filter(Boolean);
+    }
+
+    // ── Toggles ───────────────────────────────────────────────────────────────
+    function applyStatus(data) {
+      for (const [key, enabled] of Object.entries(data)) {
+        const chk = document.getElementById('toggle-' + key);
+        if (chk) chk.checked = !!enabled;
+      }
+    }
+    function toggle(watcher) {
+      fetch('/api/toggle/' + watcher, { method: 'POST' })
+        .then(r => r.json()).then(applyStatus).catch(() => {});
+    }
+
+    // ── Restart ───────────────────────────────────────────────────────────────
+    function restart() {
+      if (!confirm('Restart jbot?')) return;
+      fetch('/api/restart', { method: 'POST' }).catch(() => {});
+      showToast('Restarting…', 'ok');
+    }
+
+    // ── Excludes table ────────────────────────────────────────────────────────
+    function renderExcludes(rows) {
+      const tbody = document.getElementById('excludes-body');
+      tbody.innerHTML = '';
+      rows.forEach((row, i) => addExcludeRow(row));
+    }
+
+    function addExcludeRow(row = {}) {
+      const tbody = document.getElementById('excludes-body');
+      const tr = document.createElement('tr');
+      const pat = row.Pattern ?? '';
+      const isDir = row.Dir ?? false;
+      const cs    = row.CS  ?? false;
+      tr.innerHTML = `
+        <td><input class="text-input mono ex-pattern" value="${escAttr(pat)}" placeholder="*.nfo"></td>
+        <td class="ex-check"><input type="checkbox" ${isDir ? 'checked' : ''}></td>
+        <td class="ex-check"><input type="checkbox" ${cs   ? 'checked' : ''}></td>
+        <td class="ex-del">
+          <button class="btn btn-icon btn-sm" onclick="this.closest('tr').remove()" title="Remove">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+            </svg>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    }
+
+    function collectExcludes() {
+      return Array.from(document.querySelectorAll('#excludes-body tr')).map(tr => {
+        const cells = tr.querySelectorAll('td');
+        return {
+          Pattern: cells[0].querySelector('input').value.trim(),
+          Dir:     cells[1].querySelector('input').checked,
+          CS:      cells[2].querySelector('input').checked,
+        };
+      }).filter(r => r.Pattern);
+    }
+
+    // ── Load settings ─────────────────────────────────────────────────────────
+    function loadSettings() {
+      Promise.all([
+        fetch('/api/status').then(r => r.json()),
+        fetch('/api/settings').then(r => r.json()),
+      ]).then(([status, cfg]) => {
+        applyStatus(status);
+
+        // Paths
+        document.getElementById('s-scan_path').value           = cfg.scan_path           ?? '';
+        document.getElementById('s-movie_destination').value   = cfg.movie_destination   ?? '';
+        document.getElementById('s-series_destination').value  = cfg.series_destination  ?? '';
+
+        // Plex
+        document.getElementById('s-plex_api_root').value       = cfg.plex_api_root       ?? '';
+        document.getElementById('s-plex_movie_lib_name').value = cfg.plex_movie_lib_name ?? '';
+        document.getElementById('s-plex_show_lib_name').value  = cfg.plex_show_lib_name  ?? '';
+
+        // Movie settings
+        const ms = cfg.movie_settings ?? {};
+        document.getElementById('s-movie_folder_template').value = ms.folder_template_name ?? '';
+        document.getElementById('s-movie_file_template').value   = ms.file_template_name   ?? '';
+        document.getElementById('s-movie_mandatory').value       = (ms.mandatory ?? []).join(', ');
+
+        // Series settings
+        const ss = cfg.series_settings ?? {};
+        document.getElementById('s-series_folder_template').value    = ss.folder_template_name         ?? '';
+        document.getElementById('s-series_file_template').value      = ss.file_template_name           ?? '';
+        document.getElementById('s-series_ep_folder_template').value = ss.episode_folder_template_name ?? '';
+        document.getElementById('s-series_mandatory').value          = (ss.mandatory ?? []).join(', ');
+
+        // Excludes
+        renderExcludes(cfg.organizer_excludes ?? []);
+
+        // Lists
+        document.getElementById('s-video_extensions').value       = (cfg.video_extensions       ?? []).join(', ');
+        document.getElementById('s-media_confidence_fields').value = (cfg.media_confidence_fields ?? []).join(', ');
+      }).catch(() => showToast('Failed to load settings', 'err'));
+    }
+
+    // ── Save settings ─────────────────────────────────────────────────────────
+    function saveSettings() {
+      const btn = document.getElementById('btn-save');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      const gv = id => document.getElementById(id)?.value ?? '';
+
+      const payload = {
+        scan_path:          gv('s-scan_path'),
+        movie_destination:  gv('s-movie_destination'),
+        series_destination: gv('s-series_destination'),
+
+        plex_api_root:       gv('s-plex_api_root'),
+        plex_movie_lib_name: gv('s-plex_movie_lib_name'),
+        plex_show_lib_name:  gv('s-plex_show_lib_name'),
+
+        movie_settings: {
+          folder_template_name: gv('s-movie_folder_template'),
+          file_template_name:   gv('s-movie_file_template'),
+          mandatory:            splitTags(gv('s-movie_mandatory')),
+        },
+
+        series_settings: {
+          folder_template_name:         gv('s-series_folder_template'),
+          file_template_name:           gv('s-series_file_template'),
+          episode_folder_template_name: gv('s-series_ep_folder_template'),
+          mandatory:                    splitTags(gv('s-series_mandatory')),
+        },
+
+        organizer_excludes:     collectExcludes(),
+        video_extensions:       splitTags(gv('s-video_extensions')),
+        media_confidence_fields: splitTags(gv('s-media_confidence_fields')),
+      };
+
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            showToast('Settings saved', 'ok');
+            document.getElementById('save-status').textContent = 'Saved';
+            setTimeout(() => { document.getElementById('save-status').textContent = ''; }, 3000);
+          } else {
+            showToast('Save failed: ' + JSON.stringify(data.errors), 'err');
+          }
+        })
+        .catch(() => showToast('Save failed', 'err'))
+        .finally(() => { btn.disabled = false; btn.textContent = 'Save settings'; });
+    }
+
+    function escAttr(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    loadSettings();
+  </script>
+</body>
+</html>

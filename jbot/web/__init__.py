@@ -1,13 +1,12 @@
 import os
 import sys
 import threading
+import config
 from pathlib import Path
 from flask import Flask, jsonify, render_template, request
-import state
+import config
 from core import log, get_logs
-from media.organizer import organize, _guessit, MEDIA_CONFIDENCE_FIELDS
-
-SCAN_PATH = os.getenv("SCAN_PATH", "/output")
+from media.organizer import organize, _guessit
 
 
 def _serialize_guessit(info: dict) -> dict:
@@ -32,14 +31,19 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/settings")
+def settings():
+    return render_template("settings.html")
+
+
 @app.route("/api/status")
 def api_status():
-    return jsonify(state.get_state())
+    return jsonify(config.get_state())
 
 
 @app.route("/api/toggle/<watcher>", methods=["POST"])
 def api_toggle(watcher: str):
-    ev = state.get_event(watcher)
+    ev = config.get_event(watcher)
     if ev is None:
         return jsonify({"error": "unknown watcher"}), 404
 
@@ -49,9 +53,8 @@ def api_toggle(watcher: str):
     else:
         ev.set()
         log(f"{watcher} enabled", PREFIX)
-
-    state.save_state()
-    return jsonify(state.get_state())
+    config.set_config(watcher,ev.is_set())
+    return jsonify(config.get_state())
 
 
 @app.route("/api/logs")
@@ -69,9 +72,9 @@ def api_restart():
 
 @app.route("/api/scan")
 def api_scan():
-    scan_dir = Path(SCAN_PATH)
+    scan_dir = Path(config.get_config("scan_path"))
     if not scan_dir.is_dir():
-        return jsonify({"error": f"Scan path '{SCAN_PATH}' not found"}), 404
+        return jsonify({"error": f"Scan path '{scan_dir}' not found"}), 404
 
     # Determine which top-level subdirs to skip (e.g. the organised destinations)
     skip_tops: set[Path] = set()
@@ -98,11 +101,33 @@ def api_scan():
             "path": str(entry),
             "name": entry.name,
             "type": info.get("type"),
-            "has_confidence": bool(MEDIA_CONFIDENCE_FIELDS.intersection(info)),
+            "has_confidence": bool(set(config.get_config("media_confidence_fields")).intersection(info)),
             "info": info,
         })
 
     return jsonify(results)
+
+
+@app.route("/api/settings", methods=["GET"])
+def api_settings_get():
+    return jsonify(config.get_ui_values())
+
+
+@app.route("/api/settings", methods=["POST"])
+def api_settings_post():
+    data = request.get_json(silent=True) or {}
+    errors = {}
+    for key, value in data.items():
+        try:
+            config.set_config(key, value)
+        except KeyError:
+            errors[key] = "unknown key"
+        except Exception as exc:
+            errors[key] = str(exc)
+    if errors:
+        return jsonify({"ok": False, "errors": errors}), 400
+    log("Settings updated via WebUI", PREFIX)
+    return jsonify({"ok": True})
 
 
 @app.route("/api/organize", methods=["POST"])

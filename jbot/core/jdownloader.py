@@ -1,9 +1,7 @@
 import requests
 import time
-
-from settings import API_BASE_URL, REQUEST_TIMEOUT_SECONDS, WAIT_TIMEOUT_SECONDS
+import config
 from .logger import log
-
 
 def response_data(res: requests.Response, context: str, default):
     if res.status_code != 200:
@@ -22,14 +20,14 @@ def response_data(res: requests.Response, context: str, default):
 
 def jdown_is_ready() -> bool:
     try:
-        res = requests.get(f"{API_BASE_URL}/jd/version", timeout=REQUEST_TIMEOUT_SECONDS)
+        res = requests.get(f"{config.get_config("api_base_url")}/jd/version", timeout=config.get_config("request_timeout_seconds"))
     except requests.RequestException as exc:
         log(f"Could not reach JDownloader API: {exc}", type="debug")
         return False
     return res.status_code == 200
 
 
-def jdown_wait_ready(timeout_seconds: int = WAIT_TIMEOUT_SECONDS) -> bool:
+def jdown_wait_ready(timeout_seconds: int = config.get_config("wait_timeout_seconds")) -> bool:
     start = time.time()
     while not jdown_is_ready():
         if time.time() - start > timeout_seconds:
@@ -39,7 +37,7 @@ def jdown_wait_ready(timeout_seconds: int = WAIT_TIMEOUT_SECONDS) -> bool:
     return True
 
 
-def jdown_wait_not_ready(timeout_seconds: int = WAIT_TIMEOUT_SECONDS) -> bool:
+def jdown_wait_not_ready(timeout_seconds: int = config.get_config("wait_timeout_seconds")) -> bool:
     start = time.time()
     while jdown_is_ready():
         if time.time() - start > timeout_seconds:

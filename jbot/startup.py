@@ -2,20 +2,15 @@ import requests
 import time
 import sys
 import json
-
-from settings import (
-    API_BASE_URL, REQUEST_TIMEOUT_SECONDS, WAIT_TIMEOUT_SECONDS,
-    EXTRACTION_PASSWORDS, PREMIUM_ACCOUNT_HOSTER, PREMIUM_ACCOUNT_USERNAME,
-    PREMIUM_ACCOUNT_PASSWORD, DEBUG,
-)
+import config
 from core import log, response_data, jdown_wait_ready
 
 def jdown_get_dialog() -> list:
     log("Querying pending dialogs", type="debug")
     try:
         res = requests.post(
-            f"{API_BASE_URL}/dialogs/list",
-            timeout=REQUEST_TIMEOUT_SECONDS
+            f"{config.get_config("api_base_url")}/dialogs/list",
+            timeout=config.get_config("request_timeout_seconds")
         )
     except requests.RequestException as exc:
         log(f"While getting Dialog: {exc}", type="error")
@@ -23,7 +18,7 @@ def jdown_get_dialog() -> list:
     data = response_data(res, "dialogs/list", [])
     return data if isinstance(data, list) else []
 
-def jdown_wait_for_dialog(timeout_seconds: int = WAIT_TIMEOUT_SECONDS) -> list:
+def jdown_wait_for_dialog(timeout_seconds: int = config.get_config("wait_timeout_seconds")) -> list:
     log(f"Waiting for install dialog (timeout={timeout_seconds}s)", type="debug")
     start = time.time()
     while True:
@@ -43,14 +38,14 @@ def jdown_config_set(interface_name: str, storage: str, key: str, value: object)
     )
     try:
         res = requests.post(
-            f"{API_BASE_URL}/config/set",
+            f"{config.get_config("api_base_url")}/config/set",
             params=[
                 ("", interface_name),
                 ("", storage),
                 ("", key),
                 ("", value)
             ],
-            timeout=REQUEST_TIMEOUT_SECONDS
+            timeout=config.get_config("request_timeout_seconds")
         )
     except requests.RequestException as exc:
         log(f"Could not set config '{interface_name}': {exc}", type="error")
@@ -61,9 +56,9 @@ def jdown_archivepassword_add(password: str) -> bool:
     log(f"Adding archive password (len={len(password)})", type="debug")
     try:
         res = requests.post(
-            f"{API_BASE_URL}/extraction/addArchivePassword",
+            f"{config.get_config("api_base_url")}/extraction/addArchivePassword",
             params={"": password},
-            timeout=REQUEST_TIMEOUT_SECONDS
+            timeout=config.get_config("request_timeout_seconds")
         )
     except requests.RequestException as exc:
         log(f"Could not add archivepassword '{password}': {exc}", type="error")
@@ -80,9 +75,9 @@ def jdown_premium_account_is_set(hoster: str, username: str) -> bool:
     }
     try:
         res = requests.post(
-            f"{API_BASE_URL}/accounts/queryAccounts",
+            f"{config.get_config("api_base_url")}/accounts/queryAccounts",
             params={"": json.dumps(query)},
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            timeout=config.get_config("request_timeout_seconds"),
         )
     except requests.RequestException as exc:
         log(f"Could not query premium accounts: {exc}", type="error")
@@ -105,13 +100,13 @@ def jdown_premium_account_set(hoster: str, username: str, password: str) -> bool
     log(f"Adding premium account for hoster='{hoster}' user='{username}'", type="debug")
     try:
         res = requests.post(
-            f"{API_BASE_URL}/accounts/addAccount",
+            f"{config.get_config("api_base_url")}/accounts/addAccount",
             params=[
                 ("", hoster),
                 ("", username),
                 ("", password),
             ],
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            timeout=config.get_config("request_timeout_seconds"),
         )
     except requests.RequestException as exc:
         log(f"Could not set premium account '{username}@{hoster}': {exc}", type="error")
@@ -120,33 +115,30 @@ def jdown_premium_account_set(hoster: str, username: str, password: str) -> bool
 
 def jdown_ensure_premium_account() -> bool:
     log("Ensuring premium account is configured", type="debug")
-    if not PREMIUM_ACCOUNT_HOSTER or not PREMIUM_ACCOUNT_USERNAME or not PREMIUM_ACCOUNT_PASSWORD:
+    if not config.get_config("premium_account_hoster") or not config.get_config("premium_account_username") or not config.get_config("premium_account_password"):
         log("PREMIUM_ACCOUNT env vars not set, skipping", type="debug")
         return True
 
-    if jdown_premium_account_is_set(PREMIUM_ACCOUNT_HOSTER, PREMIUM_ACCOUNT_USERNAME):
-        log(f"Premium account '{PREMIUM_ACCOUNT_USERNAME}' for '{PREMIUM_ACCOUNT_HOSTER}' already configured")
+    if jdown_premium_account_is_set(config.get_config("premium_account_hoster"), config.get_config("premium_account_username")):
+        log(f"Premium account '{config.get_config("premium_account_username")}' for '{config.get_config("premium_account_hoster")}' already configured")
         return True
 
-    log(f"Configuring premium account '{PREMIUM_ACCOUNT_USERNAME}' for '{PREMIUM_ACCOUNT_HOSTER}'")
-    if not jdown_premium_account_set(PREMIUM_ACCOUNT_HOSTER, PREMIUM_ACCOUNT_USERNAME, PREMIUM_ACCOUNT_PASSWORD):
+    log(f"Configuring premium account '{config.get_config("premium_account_username")}' for '{config.get_config("premium_account_hoster")}'")
+    if not jdown_premium_account_set(config.get_config("premium_account_hoster"), config.get_config("premium_account_username"), config.get_config("premium_account_password")):
         log("Failed to configure premium account", type="error")
         return False
     return True
 
 
-#############################
-#############################
-
-log(f"startup.py started with API_BASE_URL='{API_BASE_URL}'", type="debug")
-log(f"startup.py DEBUG mode is {'ON' if DEBUG else 'OFF'}", type="debug")
+log(f"startup.py started with API_BASE_URL='{config.get_config("api_base_url")}'", type="debug")
+log(f"startup.py DEBUG mode is {'ON' if config.get_config("debug") else 'OFF'}", type="debug")
 log("Waiting for JDownloader to get ready ...")
 if not jdown_wait_ready():
     log("JDownloader did not become ready in time", type="error")
     sys.exit(1)
 
 log("JDownloader is ready", type="debug")
-for pwd in EXTRACTION_PASSWORDS.split(","):
+for pwd in config.get_config("extraction_passwords").split(","):
     pwd = pwd.strip()
     if not pwd:
         continue

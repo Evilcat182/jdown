@@ -2,9 +2,9 @@ import requests
 import json
 import time
 import threading
+import config
 from pathlib import Path
 
-from settings import API_BASE_URL, REQUEST_TIMEOUT_SECONDS
 from core import log, response_data, jdown_wait_ready
 from media import organize
 
@@ -16,8 +16,8 @@ def jdown_downloads_get_state():
     ctx = "downloadcontroller/getCurrentState"
     try:
         res = requests.post(
-            f"{API_BASE_URL}/{ctx}",
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            f"{config.get_config("api_base_url")}/{ctx}",
+            timeout=config.get_config("request_timeout_seconds"),
         )
     except requests.RequestException as exc:
         log(f"Could not get downloads state: {exc}", PREFIX, "error")
@@ -43,9 +43,9 @@ def jdown_downloads_get_packages(name: str = None):
     ctx = "downloadsV2/queryPackages"
     try:
         res = requests.post(
-            f"{API_BASE_URL}/{ctx}",
+            f"{config.get_config("api_base_url")}/{ctx}",
             params={"": json.dumps(query)},
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            timeout=config.get_config("request_timeout_seconds"),
         )
     except requests.RequestException as exc:
         log(f"Could not query download packages: {exc}", PREFIX, "error")
@@ -82,9 +82,9 @@ def jdown_downloads_get_package_links(package_uuid: list[int]):
     ctx = "downloadsV2/queryLinks"
     try:
         res = requests.post(
-            f"{API_BASE_URL}/{ctx}",
+            f"{config.get_config("api_base_url")}/{ctx}",
             params={"": json.dumps(query)},
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            timeout=config.get_config("request_timeout_seconds"),
         )
     except requests.RequestException as exc:
         log(f"Could not query download links: {exc}", PREFIX, "error")
@@ -96,12 +96,12 @@ def jdown_get_archive_info(link_ids: list[int] = None, package_ids: list[int] = 
     ctx = "extraction/getArchiveInfo"
     try:
         res = requests.post(
-            f"{API_BASE_URL}/{ctx}",
+            f"{config.get_config("api_base_url")}/{ctx}",
             params={
                 "linkIds":    json.dumps(link_ids or []),
                 "packageIds": json.dumps(package_ids or []),
             },
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            timeout=config.get_config("request_timeout_seconds"),
         )
     except requests.RequestException as exc:
         log(f"Could not get archive info: {exc}", PREFIX, "error")

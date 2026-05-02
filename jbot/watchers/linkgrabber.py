@@ -2,8 +2,7 @@ import requests
 import json
 import time
 import threading
-
-from settings import API_BASE_URL, REQUEST_TIMEOUT_SECONDS
+import config
 from core import log, response_data, jdown_wait_ready
 
 PREFIX = "[AutoDownload]"
@@ -28,9 +27,9 @@ def jdown_linkgrabber_get_packages(name: str = None):
     ctx = "linkgrabberv2/queryPackages"
     try:
         res = requests.post(
-            f"{API_BASE_URL}/{ctx}",
+            f"{config.get_config("api_base_url")}/{ctx}",
             params={"": json.dumps(query)},
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            timeout=config.get_config("request_timeout_seconds"),
         )
     except requests.RequestException as exc:
         log(f"Could not query linkgrabber packages: {exc}", PREFIX, "error")
@@ -46,12 +45,12 @@ def jdown_download_package(package_uuid: int) -> bool:
     ctx = "linkgrabberv2/moveToDownloadlist"
     try:
         res = requests.post(
-            f"{API_BASE_URL}/{ctx}",
+            f"{config.get_config("api_base_url")}/{ctx}",
             params={
                 "linkIds":    json.dumps([]),
                 "packageIds": json.dumps([package_uuid]),
             },
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            timeout=config.get_config("request_timeout_seconds"),
         )
     except requests.RequestException as exc:
         log(f"Could not move package {package_uuid} to download list: {exc}", PREFIX, "error")

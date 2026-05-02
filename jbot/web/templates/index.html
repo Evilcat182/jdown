@@ -46,7 +46,7 @@
       gap: 28px;
     }
 
-    /* ── Header ─────────────────────────────────────────────────────────────── */
+    /* ── Header ───────────────────────────────────────────────────────────── */
     .header {
       display: flex;
       align-items: center;
@@ -61,14 +61,24 @@
       box-shadow: 0 0 8px var(--green);
       flex-shrink: 0;
     }
-    .brand-name {
-      font-size: 17px; font-weight: 600;
-      letter-spacing: -0.025em;
-      color: var(--text-1);
-    }
-    .brand-sub { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+    .brand-name { font-size: 17px; font-weight: 600; letter-spacing: -0.025em; }
+    .brand-sub  { font-size: 11px; color: var(--text-3); margin-top: 1px; }
 
-    /* ── Section label ───────────────────────────────────────────────────────── */
+    .icon-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-2);
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 0.13s, background 0.13s, border-color 0.13s;
+    }
+    .icon-btn:hover { color: var(--text-1); background: var(--surface-2); border-color: var(--border-2); }
+    .icon-btn svg { width: 16px; height: 16px; }
+
+    /* ── Section label ─────────────────────────────────────────────────────── */
     .section-label {
       font-size: 10.5px; font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.09em;
@@ -76,110 +86,36 @@
       margin-bottom: 8px;
     }
 
-    /* ── Toggle card list ───────────────────────────────────────────────────── */
-    .card-list {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-    .toggle-row {
-      display: flex; align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 13px 18px;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.12s;
-    }
-    .toggle-row:last-child { border-bottom: none; }
-    .toggle-row:hover { background: var(--surface-2); }
-
-    .toggle-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .toggle-name { font-size: 13.5px; font-weight: 500; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .toggle-desc { font-size: 11.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    /* Toggle switch */
-    .switch { position: relative; display: inline-block; width: 38px; height: 21px; flex-shrink: 0; }
-    .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
-    .slider {
-      position: absolute; inset: 0;
-      cursor: pointer;
-      background: var(--border-2);
-      border-radius: 21px;
-      transition: background 0.18s;
-    }
-    .slider::before {
-      content: '';
-      position: absolute;
-      width: 15px; height: 15px;
-      left: 3px; top: 3px;
-      background: #fff;
-      border-radius: 50%;
-      transition: transform 0.18s cubic-bezier(.4,0,.2,1);
-      box-shadow: 0 1px 3px rgba(0,0,0,.4);
-    }
-    input:checked + .slider { background: var(--accent); }
-    input:checked + .slider::before { transform: translateX(17px); }
-    input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-    /* ── Action cards ────────────────────────────────────────────────────────── */
-    .action-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
+    /* ── Action card ───────────────────────────────────────────────────────── */
     .action-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 16px 18px;
     }
-    .action-card.full { grid-column: 1 / -1; }
-    .action-title {
-      font-size: 13px; font-weight: 500;
-      color: var(--text-1);
-      margin-bottom: 12px;
+    .action-card-row {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 16px;
     }
-    .action-desc { font-size: 11.5px; color: var(--text-3); margin-bottom: 14px; line-height: 1.55; }
+    .action-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+    .action-desc  { font-size: 11.5px; color: var(--text-3); line-height: 1.55; }
 
-    /* ── Buttons ─────────────────────────────────────────────────────────────── */
+    /* ── Buttons ───────────────────────────────────────────────────────────── */
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
       padding: 8px 16px;
       border: none; border-radius: 7px;
-      font-size: 13px; font-weight: 600;
-      font-family: inherit;
+      font-size: 13px; font-weight: 600; font-family: inherit;
       cursor: pointer;
-      transition: background 0.13s, opacity 0.13s, color 0.13s;
+      transition: background 0.13s, opacity 0.13s;
       white-space: nowrap;
-      text-decoration: none;
     }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary  { background: var(--accent); color: #fff; }
-    .btn-primary:hover:not(:disabled)  { background: var(--accent-h); }
-    .btn-ghost    { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); }
-    .btn-ghost:hover:not(:disabled)    { background: var(--border); color: var(--text-1); }
-    .btn-danger   { background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,.25); }
-    .btn-danger:hover:not(:disabled)   { background: rgba(239,68,68,.08); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-h); }
+    .btn-sm { padding: 5px 13px; font-size: 12px; }
 
-    /* ── Path input ──────────────────────────────────────────────────────────── */
-    .input-row { display: flex; gap: 8px; }
-    .path-input {
-      flex: 1; min-width: 0;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      padding: 8px 12px;
-      font-size: 12.5px;
-      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
-      color: var(--text-1);
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    .path-input::placeholder { color: var(--text-3); }
-    .path-input:focus { border-color: var(--accent); }
-
-    /* ── Log panel ───────────────────────────────────────────────────────────── */
+    /* ── Log panel ─────────────────────────────────────────────────────────── */
     .log-panel {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -215,10 +151,10 @@
 
     #log-output {
       padding: 10px 16px;
-      height: calc(100vh - 580px);
+      height: calc(100vh - 420px);
       min-height: 200px;
       overflow-y: auto;
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
       font-size: 11.5px;
       line-height: 1.75;
     }
@@ -238,20 +174,17 @@
     .log-success .log-msg { color: #34d399; }
     .log-success .log-prefix { color: #34d399; }
 
-    /* ── Scan results ─────────────────────────────────────────────────────────── */
+    /* ── Scan results ──────────────────────────────────────────────────────── */
     .scan-results-header {
-      display: flex;
-      align-items: center;
+      display: flex; align-items: center;
       justify-content: space-between;
       margin: 14px 0 10px;
     }
     .scan-count { font-size: 12px; color: var(--text-2); }
     .scan-list  { display: flex; flex-direction: column; gap: 8px; }
     .scan-empty {
-      text-align: center;
-      padding: 22px;
-      color: var(--text-3);
-      font-size: 13px;
+      text-align: center; padding: 22px;
+      color: var(--text-3); font-size: 13px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -267,8 +200,7 @@
     .scan-item.organized      { border-color: rgba(34,197,94,.35); opacity: .65; }
 
     .scan-item-header {
-      display: flex;
-      align-items: center;
+      display: flex; align-items: center;
       justify-content: space-between;
       padding: 10px 16px;
       border-bottom: 1px solid var(--border);
@@ -277,23 +209,14 @@
     .scan-item-name {
       font-size: 12px;
       font-family: 'JetBrains Mono','Fira Code','Courier New',monospace;
-      color: var(--text-1);
-      word-break: break-all;
-      flex: 1;
-      min-width: 0;
+      word-break: break-all; flex: 1; min-width: 0;
     }
-    .scan-item-badges {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
-    }
+    .scan-item-badges { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
     .type-badge {
       font-size: 9.5px; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.07em;
-      padding: 2px 7px;
-      border-radius: 4px;
+      padding: 2px 7px; border-radius: 4px;
     }
     .type-movie   { background: rgba(99,102,241,.2);  color: #a5b4fc; }
     .type-episode { background: rgba(34,197,94,.14);  color: #6ee7b7; }
@@ -301,8 +224,7 @@
     .warn-badge {
       font-size: 9.5px; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.07em;
-      padding: 2px 7px;
-      border-radius: 4px;
+      padding: 2px 7px; border-radius: 4px;
       background: rgba(245,158,11,.14); color: var(--amber);
     }
 
@@ -312,8 +234,8 @@
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       gap: 8px 10px;
     }
-    .field-group    { display: flex; flex-direction: column; gap: 3px; }
-    .field-label    {
+    .field-group { display: flex; flex-direction: column; gap: 3px; }
+    .field-label {
       font-size: 9.5px; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.08em;
       color: var(--text-3);
@@ -323,31 +245,22 @@
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 5px 8px;
-      font-size: 12px;
-      font-family: inherit;
-      color: var(--text-1);
-      outline: none;
-      transition: border-color 0.15s;
-      width: 100%;
+      font-size: 12px; font-family: inherit;
+      color: var(--text-1); outline: none;
+      transition: border-color 0.15s; width: 100%;
     }
-    .field-input:focus   { border-color: var(--accent); }
+    .field-input:focus { border-color: var(--accent); }
     .field-input::placeholder { color: var(--text-3); }
     .field-select { cursor: pointer; appearance: none; }
 
     .scan-item-footer {
       padding: 9px 16px;
       border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: flex-end;
+      display: flex; justify-content: flex-end;
     }
-    .btn-sm { padding: 5px 13px; font-size: 12px; }
 
-    /* ── Responsive ──────────────────────────────────────────────────────────── */
     @media (max-width: 480px) {
       body { padding: 20px 12px 48px; }
-      .action-grid { grid-template-columns: 1fr; }
-      .action-card.full { grid-column: auto; }
-      .input-row { flex-direction: column; }
       .scan-fields { grid-template-columns: 1fr 1fr; }
     }
   </style>
@@ -364,87 +277,25 @@
           <div class="brand-sub">Download automation</div>
         </div>
       </div>
-      <button class="btn btn-danger" id="btn-restart" onclick="restart()">Restart</button>
+      <a href="/settings" class="icon-btn" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
     </header>
 
-    <!-- Watchers -->
+    <!-- Scan -->
     <section>
-      <div class="section-label">Automation</div>
-      <div class="card-list">
-
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-name">Autostart Downloads</span>
-            <span class="toggle-desc">Automatically start queued links</span>
+      <div class="section-label">Scanner</div>
+      <div class="action-card">
+        <div class="action-card-row">
+          <div>
+            <div class="action-title">Scan Output Folder</div>
+            <div class="action-desc">Detect downloaded media, review &amp; edit properties, then organize.</div>
           </div>
-          <label class="switch" title="Toggle autostart">
-            <input type="checkbox" id="toggle-linkgrabber" onchange="toggle('linkgrabber')">
-            <span class="slider"></span>
-          </label>
+          <button id="btn-scan" class="btn btn-primary" style="flex-shrink:0;" onclick="scanFolder()">Scan</button>
         </div>
-
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-name">Auto-organize on Finish</span>
-            <span class="toggle-desc">Rename, clean up and move completed downloads</span>
-          </div>
-          <label class="switch" title="Toggle auto-organize">
-            <input type="checkbox" id="toggle-downloads" onchange="toggle('downloads')">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-name">Plex Library Scan</span>
-            <span class="toggle-desc">Trigger a Plex scan after each organize</span>
-          </div>
-          <label class="switch" title="Toggle Plex scan">
-            <input type="checkbox" id="toggle-plex" onchange="toggle('plex')">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-name">Delete Source After Copy</span>
-            <span class="toggle-desc">Remove the download folder once moved</span>
-          </div>
-          <label class="switch" title="Toggle delete source">
-            <input type="checkbox" id="toggle-delete_source" onchange="toggle('delete_source')">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-name">Auto-answer Dialogs</span>
-            <span class="toggle-desc">Dismiss JDownloader prompts automatically</span>
-          </div>
-          <label class="switch" title="Toggle dialog auto-answer">
-            <input type="checkbox" id="toggle-dialogs" onchange="toggle('dialogs')">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Actions -->
-    <section>
-      <div class="section-label">Actions</div>
-      <div class="action-grid">
-
-        <div class="action-card full">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div>
-              <div class="action-title" style="margin-bottom:4px;">Scan Output Folder</div>
-              <div class="action-desc" style="margin-bottom:0;">Detect downloaded media in <code style="font-size:11px;color:var(--text-2);">/output</code>, review &amp; edit properties, then organize.</div>
-            </div>
-            <button id="btn-scan" class="btn btn-primary" style="margin-left:16px;flex-shrink:0;" onclick="scanFolder()">Scan</button>
-          </div>
-        </div>
-
       </div>
       <div id="scan-results"></div>
     </section>
@@ -463,35 +314,9 @@
       </div>
     </section>
 
-  </div><!-- /.layout -->
+  </div>
 
   <script>
-    // ── Watchers ─────────────────────────────────────────────────────────────
-    function applyStatus(data) {
-      for (const [key, enabled] of Object.entries(data)) {
-        const chk = document.getElementById('toggle-' + key);
-        if (!chk) continue;
-        chk.checked = !!enabled;
-      }
-    }
-    function refresh() {
-      fetch('/api/status').then(r => r.json()).then(applyStatus).catch(() => {});
-    }
-    function toggle(watcher) {
-      fetch('/api/toggle/' + watcher, { method: 'POST' })
-        .then(r => r.json()).then(applyStatus).catch(() => {});
-    }
-
-    // ── Restart ───────────────────────────────────────────────────────────────
-    function restart() {
-      const btn = document.getElementById('btn-restart');
-      btn.textContent = 'Restarting…';
-      btn.disabled = true;
-      fetch('/api/restart', { method: 'POST' })
-        .catch(() => {})
-        .finally(() => setTimeout(() => { btn.textContent = 'Restart'; btn.disabled = false; }, 3000));
-    }
-
     // ── Scan ──────────────────────────────────────────────────────────────────
     let _scanItems = [];
 
@@ -517,7 +342,7 @@
     function renderScanResults(items) {
       const container = document.getElementById('scan-results');
       if (!items.length) {
-        container.innerHTML = '<div class="scan-empty">No media folders found in /output.</div>';
+        container.innerHTML = '<div class="scan-empty">No media folders found.</div>';
         return;
       }
       const header = `
@@ -532,27 +357,23 @@
     function renderScanItem(item, i) {
       const type = item.type || '';
       const badgeClass = type === 'movie' ? 'type-movie' : type === 'episode' ? 'type-episode' : 'type-unknown';
-      const badgeLabel = type || 'unknown';
       const warnBadge  = item.has_confidence ? '' : '<span class="warn-badge">low confidence</span>';
       const info = item.info || {};
       const lowCls = item.has_confidence ? '' : ' low-confidence';
-
       const v = (key, fallback = '') => escHtml(String(info[key] ?? fallback));
       const inp = (cls, key, placeholder = '') =>
         `<input class="field-input ${cls}" value="${v(key)}" placeholder="${escHtml(placeholder)}">`;
       const episodeOnlyStyle = type !== 'episode' ? ' style="display:none"' : '';
-
       return `
       <div class="scan-item${lowCls}" id="scan-item-${i}">
         <div class="scan-item-header">
           <span class="scan-item-name">${escHtml(item.name)}</span>
           <div class="scan-item-badges">
             ${warnBadge}
-            <span class="type-badge ${badgeClass}">${badgeLabel}</span>
+            <span class="type-badge ${badgeClass}">${type || 'unknown'}</span>
           </div>
         </div>
         <div class="scan-fields">
-
           <div class="field-group">
             <label class="field-label">Type</label>
             <select class="field-input field-select field-type" onchange="onTypeChange(this,${i})">
@@ -560,52 +381,42 @@
               <option value="episode" ${type==='episode' ? 'selected' : ''}>Episode</option>
             </select>
           </div>
-
           <div class="field-group">
             <label class="field-label">Title</label>
             ${inp('field-title', 'title')}
           </div>
-
           <div class="field-group">
             <label class="field-label">Year</label>
             ${inp('field-year', 'year', 'e.g. 2024')}
           </div>
-
           <div class="field-group field-ep"${episodeOnlyStyle}>
             <label class="field-label">Season</label>
             ${inp('field-season', 'season', 'e.g. 1')}
           </div>
-
           <div class="field-group field-ep"${episodeOnlyStyle}>
             <label class="field-label">Episode</label>
             ${inp('field-episode', 'episode', 'e.g. 4')}
           </div>
-
           <div class="field-group field-ep"${episodeOnlyStyle}>
             <label class="field-label">Episode Title</label>
             ${inp('field-episode-title', 'episode_title')}
           </div>
-
           <div class="field-group">
             <label class="field-label">Resolution</label>
             ${inp('field-screen-size', 'screen_size', 'e.g. 1080p')}
           </div>
-
           <div class="field-group">
             <label class="field-label">Video Codec</label>
             ${inp('field-video-codec', 'video_codec', 'e.g. x265')}
           </div>
-
           <div class="field-group">
             <label class="field-label">Source</label>
             ${inp('field-source', 'source', 'e.g. BluRay')}
           </div>
-
           <div class="field-group">
             <label class="field-label">Audio Codec</label>
             ${inp('field-audio-codec', 'audio_codec', 'e.g. DTS')}
           </div>
-
         </div>
         <div class="scan-item-footer">
           <button class="btn btn-primary btn-sm btn-org" onclick="organizeItem(${i})">Organize</button>
@@ -614,10 +425,9 @@
     }
 
     function onTypeChange(sel, i) {
-      const card = document.getElementById('scan-item-${i}'.replace('${i}', i));
+      const card = document.getElementById('scan-item-' + i);
       const isEpisode = sel.value === 'episode';
       card.querySelectorAll('.field-ep').forEach(el => el.style.display = isEpisode ? '' : 'none');
-      // Update badge
       const badge = card.querySelector('.type-badge');
       badge.className = 'type-badge ' + (isEpisode ? 'type-episode' : 'type-movie');
       badge.textContent = sel.value;
@@ -643,7 +453,6 @@
     function organizeItem(i) {
       const item = _scanItems[i];
       if (!item) return;
-      const info = getItemInfo(i);
       const card = document.getElementById('scan-item-' + i);
       const btn  = card.querySelector('.btn-org');
       btn.textContent = 'Running…';
@@ -651,7 +460,7 @@
       fetch('/api/organize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: item.path, info }),
+        body: JSON.stringify({ path: item.path, info: getItemInfo(i) }),
       })
         .catch(() => {})
         .finally(() => {
@@ -661,9 +470,7 @@
         });
     }
 
-    function organizeAll() {
-      _scanItems.forEach((_, i) => organizeItem(i));
-    }
+    function organizeAll() { _scanItems.forEach((_, i) => organizeItem(i)); }
 
     // ── Logs ──────────────────────────────────────────────────────────────────
     let lastId = 0;
@@ -675,7 +482,7 @@
       if (!entries.length) return;
       const atBottom = output.scrollHeight - output.scrollTop <= output.clientHeight + 4;
       for (const e of entries) {
-        const line   = document.createElement('div');
+        const line = document.createElement('div');
         line.className = 'log-line log-' + e.type;
         const ts     = `<span class="log-ts">${escHtml(e.ts)}</span>`;
         const prefix = e.prefix ? `<span class="log-prefix">${escHtml(e.prefix)}</span>` : '';
@@ -688,7 +495,7 @@
     }
 
     function escHtml(s) {
-      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
     function pollLogs() {
@@ -696,9 +503,7 @@
         .then(r => r.json()).then(appendLogs).catch(() => {});
     }
 
-    refresh();
     pollLogs();
-    setInterval(refresh,  5000);
     setInterval(pollLogs, 2000);
   </script>
 </body>
