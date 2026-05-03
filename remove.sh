@@ -14,18 +14,8 @@ else
     COMPOSE=""
 fi
 
-# Bring down the stack if it is running
+# Bring down the stack, remove named volumes and images
 if [ -n "$COMPOSE" ]; then
-    echo "reset: running $COMPOSE down..."
-    $COMPOSE down
+    echo "reset: running $COMPOSE down --volumes --rmi all..."
+    $COMPOSE down --volumes --rmi all
 fi
-
-# Delete all contents of config dirs except .gitkeep
-for DIR in config/jdownloader config/firefox config/jbot; do
-    if [ -d "$DIR" ]; then
-        echo "reset: clearing $DIR (keeping .gitkeep)..."
-        find "$DIR" -mindepth 1 -not -name ".gitkeep" -delete 2>/dev/null || true
-    fi
-done
-
-echo "reset: done."

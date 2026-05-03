@@ -349,34 +349,6 @@
       </div>
     </section>
 
-    <!-- Paths -->
-    <section>
-      <div class="section-label">Paths</div>
-      <div class="settings-card">
-        <div class="settings-row">
-          <div>
-            <div class="settings-key">Scan path</div>
-            <div class="settings-hint">Root folder to scan for downloaded media</div>
-          </div>
-          <input class="text-input mono" id="s-scan_path" placeholder="/output">
-        </div>
-        <div class="settings-row">
-          <div>
-            <div class="settings-key">Movie destination</div>
-            <div class="settings-hint">Where organized movies are moved to</div>
-          </div>
-          <input class="text-input mono" id="s-movie_destination" placeholder="/output/done">
-        </div>
-        <div class="settings-row">
-          <div>
-            <div class="settings-key">Series destination</div>
-            <div class="settings-hint">Where organized TV series are moved to</div>
-          </div>
-          <input class="text-input mono" id="s-series_destination" placeholder="/output/done">
-        </div>
-      </div>
-    </section>
-
     <!-- Plex -->
     <section>
       <div class="section-label">Plex</div>
@@ -603,11 +575,6 @@
       ]).then(([status, cfg]) => {
         applyStatus(status);
 
-        // Paths
-        document.getElementById('s-scan_path').value           = cfg.scan_path           ?? '';
-        document.getElementById('s-movie_destination').value   = cfg.movie_destination   ?? '';
-        document.getElementById('s-series_destination').value  = cfg.series_destination  ?? '';
-
         // Plex
         document.getElementById('s-plex_api_root').value       = cfg.plex_api_root       ?? '';
         document.getElementById('s-plex_movie_lib_name').value = cfg.plex_movie_lib_name ?? '';
@@ -644,10 +611,6 @@
       const gv = id => document.getElementById(id)?.value ?? '';
 
       const payload = {
-        scan_path:          gv('s-scan_path'),
-        movie_destination:  gv('s-movie_destination'),
-        series_destination: gv('s-series_destination'),
-
         plex_api_root:       gv('s-plex_api_root'),
         plex_movie_lib_name: gv('s-plex_movie_lib_name'),
         plex_show_lib_name:  gv('s-plex_show_lib_name'),

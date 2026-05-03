@@ -2,6 +2,7 @@ services:
 
   gluetun:
     image: qmcgaw/gluetun:latest
+    pull_policy: always
     container_name: gluetun
     cap_add:
       - NET_ADMIN
@@ -34,6 +35,7 @@ services:
 
   firefox:
     image: jlesage/firefox:latest
+    pull_policy: always
     container_name: firefox
     network_mode: service:gluetun
     depends_on:
@@ -49,12 +51,13 @@ services:
       - FF_OPEN_URL=${FF_OPEN_URL} # Multiple URLs can be opened by separating them with the pipe character
       - CONTAINER_DEBUG=${DEBUG}
     volumes:
-      - ./config/firefox:/config:Z,rw
+      - jdown_config_firefox:/config:Z,rw
       - ./init/init-firefox.sh:/etc/cont-init.d/99-firefox.sh:Z,ro
     restart: unless-stopped
 
   jdownloader:
     image: jlesage/jdownloader-2:latest
+    pull_policy: always
     container_name: jdownloader
     network_mode: service:gluetun
     depends_on:
@@ -80,10 +83,11 @@ services:
       - WEB_FILE_MANAGER=1
       - WEB_FILE_MANAGER_ALLOWED_PATHS=/output
       - CONTAINER_DEBUG=${DEBUG}
+    #entrypoint: ["/bin/sh", "-c", "chown 1000:1000 /output 2>/dev/null; exec /init"]
 
     volumes:
-      - ./config/jdownloader:/config:Z,rw
-      - ${DOWNLOADS_PATH}:/output:z,rw
+      - jdown_config_jdownloader:/config:Z,rw
+      - ${DOWNLOADS_PATH:-jdown_downloads}:/output:z,rw
       - ./init/init-jdownloader.sh:/etc/cont-init.d/99-init-jdownloader.sh:Z,ro
     restart: unless-stopped
 
@@ -104,16 +108,14 @@ services:
       - PREMIUM_ACCOUNT_HOSTER=${PREMIUM_ACCOUNT_HOSTER}
       - PREMIUM_ACCOUNT_USERNAME=${PREMIUM_ACCOUNT_USERNAME}
       - PREMIUM_ACCOUNT_PASSWORD=${PREMIUM_ACCOUNT_PASSWORD}
-      - MOVIE_DESTINATION=${MOVIE_DESTINATION}
-      - SERIES_DESTINATION=${SERIES_DESTINATION}
       - PLEX_API_ROOT=${PLEX_API_ROOT}
       - PLEX_TOKEN=${PLEX_TOKEN}
     volumes:
       - ./jbot:/app:Z,rw
-      - ./config/jbot:/config:Z,rw
-      - ${DOWNLOADS_PATH}:/output:z,rw
-      - ${MOVIE_DESTINATION}:${MOVIE_DESTINATION}:Z,rw
-      - ${SERIES_DESTINATION}:${SERIES_DESTINATION}:Z,rw
+      - jdown_config_jbot:/config:Z,rw
+      - ${DOWNLOADS_PATH:-jdown_downloads}:/output:z,rw
+      - ${MOVIE_DESTINATION:-jdown_movies}:/data/movies:z,rw
+      - ${SERIES_DESTINATION:-jdown_series}:/data/series:z,rw
     restart: unless-stopped
 
 networks:
@@ -122,3 +124,11 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/29
+
+volumes:
+  jdown_downloads:
+  jdown_movies:
+  jdown_series:
+  jdown_config_firefox:
+  jdown_config_jdownloader:
+  jdown_config_jbot:

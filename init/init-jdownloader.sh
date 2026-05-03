@@ -2,6 +2,7 @@
 # Runs inside the jdownloader container before JD starts.
 # Reads env vars and writes JDownloader config files.
 
+
 JD_CFG="/config/cfg"
 mkdir -p "$JD_CFG"
 

@@ -18,9 +18,10 @@ _SCHEMA = {
     "dialogs":                  {"default": True,  "env": "AUTOANSWER_DIALOGS",     "type": bool, "ui": True, "event": True},
 
     # ── Paths ───────────────────────────────────────────────────────────────
-    "scan_path":                {"default": "/output",      "env": "SCAN_PATH",          "type": str, "ui": True},
-    "movie_destination":        {"default": "/output/done", "env": "MOVIE_DESTINATION",  "type": str, "ui": True},
-    "series_destination":       {"default": "/output/done", "env": "SERIES_DESTINATION", "type": str, "ui": True},
+    "scan_path":                {"default": "/output",      "env": "SCAN_PATH",          "type": str, "ui": False},
+    "downloads_path":           {"default": "/output",      "env": "DOWNLOADS_PATH",     "type": str, "ui": False},
+    "movie_destination":        {"default": "/data/movies", "env": "MOVIE_DESTINATION",  "type": str, "ui": False},
+    "series_destination":       {"default": "/data/series", "env": "SERIES_DESTINATION", "type": str, "ui": False},
 
     # ── Plex ────────────────────────────────────────────────────────────────
     "plex_api_root":            {"default": "", "env": "PLEX_API_ROOT",       "type": str, "ui": True},
@@ -144,6 +145,7 @@ for key, val in _EVENTS.items():
     if _store.get(key):
         _EVENTS.get(key).set()
 
+_save()
 
 def get_config(key: str):
     return _store.get(key)
