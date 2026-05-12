@@ -1,10 +1,8 @@
 import time
 import threading
-import requests
-import json
 import config
 
-from core import log, response_data
+from core import log, jdown_list_dialogs, jdown_get_dialog, jdown_get_dialog_type_info, jdown_answer_dialog
 
 PREFIX = "[DialogHandler]"
 POLL_INTERVAL = 2  # seconds between polls
@@ -17,72 +15,6 @@ POLL_INTERVAL = 2  # seconds between polls
 DIALOG_RULES: dict[str, dict] = {
     "org.appwork.uio.ConfirmDialogInterface": {"closereason": "OK", "dontshowagainselected": "false"},
 }
-
-
-def jdown_list_dialogs() -> list[int]:
-    log("Listing pending dialogs", PREFIX, "debug")
-    try:
-        res = requests.post(
-            f"{config.get_config("api_base_url")}/dialogs/list",
-            timeout=config.get_config("request_timeout_seconds"),
-        )
-    except requests.RequestException as exc:
-        log(f"While listing dialogs: {exc}", PREFIX, "error")
-        return []
-    data = response_data(res, "dialogs/list", [])
-    return data if isinstance(data, list) else []
-
-
-def jdown_get_dialog(dialog_id: int) -> dict | None:
-    log(f"Getting dialog info for id={dialog_id}", PREFIX, "debug")
-    try:
-        res = requests.post(
-            f"{config.get_config("api_base_url")}/dialogs/get",
-            params={"id": dialog_id, "icon": "false", "properties": "true"},
-            timeout=config.get_config("request_timeout_seconds"),
-        )
-    except requests.RequestException as exc:
-        log(f"While getting dialog {dialog_id}: {exc}", PREFIX, "error")
-        return None
-    return response_data(res, "dialogs/get", None)
-
-
-def jdown_get_dialog_type_info(dialog_type: str) -> dict | None:
-    log(f"Fetching type info for '{dialog_type}'", PREFIX, "debug")
-    try:
-        res = requests.post(
-            f"{config.get_config("api_base_url")}/dialogs/getTypeInfo",
-            params={"dialogType": dialog_type},
-            timeout=config.get_config("request_timeout_seconds"),
-        )
-    except requests.RequestException as exc:
-        log(f"While getting type info: {exc}", PREFIX, "error")
-        return None
-    return response_data(res, "dialogs/getTypeInfo", None)
-
-
-def jdown_answer_dialog(dialog_id: int, data: dict, dialog_type: str = "") -> bool:
-    log(f"Answering dialog id={dialog_id} with {data}", PREFIX, "debug")
-    try:
-        res = requests.post(
-            f"{config.get_config("api_base_url")}/dialogs/answer",
-            params={"id": dialog_id, "data": json.dumps(data)},
-            timeout=config.get_config("request_timeout_seconds"),
-        )
-    except requests.RequestException as exc:
-        log(f"While answering dialog {dialog_id}: {exc}", PREFIX, "error")
-        return False
-    if res.status_code != 200:
-        log(f"Answer dialog {dialog_id} failed: {res.status_code} {res.text}", PREFIX, "error")
-        if dialog_type:
-            type_info = jdown_get_dialog_type_info(dialog_type)
-            if type_info:
-                log(f"Expected answer schema (in) for '{dialog_type}': {type_info.get('in')}", PREFIX, "error")
-                log(f"Dialog output schema (out) for '{dialog_type}': {type_info.get('out')}", PREFIX, "error")
-        return False
-    log(f"Dialog {dialog_id} answered and closed (type={dialog_type})", PREFIX)
-    return True
-
 
 def handle_dialogs():
     ids = jdown_list_dialogs()
