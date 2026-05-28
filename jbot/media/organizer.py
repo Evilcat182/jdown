@@ -23,7 +23,9 @@ def _guessit(name: str):
     if result.get("year"):
         result["year_in_brackets"] = f"({result['year']})"
     if result.get("season") and result.get("episode"):
-        result["season_and_episode"] = f"S{result['season']:02}E{result['episode']:02}"
+        season = result["season"][0] if isinstance(result["season"], list) else result["season"]
+        episode = result["episode"][0] if isinstance(result["episode"], list) else result["episode"]
+        result["season_and_episode"] = f"S{season:02}E{episode:02}"
     return result
 
 
@@ -217,8 +219,9 @@ def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excl
             continue
         if excluded and _is_excluded(f, excluded):
             continue
-        mapped_dir = next((dir_mapping[p] for p in [f.parent, *f.parent.parents] if p in dir_mapping and p != src), None)
-        rel = f.relative_to(mapped_dir) if mapped_dir else f.relative_to(src)
+        mapped_src = next((p for p in [f.parent, *f.parent.parents] if p in dir_mapping and p != src), None)
+        mapped_dir = dir_mapping[mapped_src] if mapped_src else None
+        rel = f.relative_to(mapped_src) if mapped_src else f.relative_to(src)
         _safe_copy(f, (mapped_dir or out_base) / rel)
 
     return moved
