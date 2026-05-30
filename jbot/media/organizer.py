@@ -123,24 +123,13 @@ def _render_template(template: str, info: dict, sep: str = ".") -> str:
     return sep.join(parts)
 
 
-def _write_error(path: Path, lines: list[str]):
-    error_file = path / "ORGANIZER-ERROR.txt"
-    with error_file.open("a") as fh:
-        fh.write(f"Path: {path.resolve()}\n")
-        fh.writelines(lines)
-        fh.write("\n")
-
-
-def _organize_movie(src: Path, dest: Path, info: dict, videos: list[Path], excluded: set = None, error_path: Path = None) -> bool:
+def _organize_movie(src: Path, dest: Path, info: dict, videos: list[Path], excluded: set = None, error_path: Path = None) -> tuple[bool, list[str]]:
     ep = error_path or src
 
     if len(videos) > 1:
-        lines = [f"Multiple video files found for a movie ({len(videos)} files):\n"]
-        lines += [f"  - {v.name}\n" for v in videos]
-        lines += ["Nothing was copied. Please verify the content and organize manually.\n"]
-        _write_error(ep, lines)
+        msg = f"Multiple video files found for a movie ({len(videos)} files): " + ", ".join(v.name for v in videos) + ". Nothing was copied. Please verify and organize manually."
         log(f"Multiple video files found in '{ep.name}', skipping", PREFIX, "warning")
-        return False
+        return False, [msg]
 
     missing = _check_mandatory(info, config.get_config("movie_settings")["mandatory"])
     if missing:
@@ -151,9 +140,9 @@ def _organize_movie(src: Path, dest: Path, info: dict, videos: list[Path], exclu
             log(f"Filled missing fields from video filename '{videos[0].name}'", PREFIX, "debug")
             info = merged
         else:
-            _write_error(ep, ["The following mandatory fields could not be determined:\n"] + [f"  - {f}\n" for f in missing])
+            msg = "Missing mandatory fields: " + ", ".join(missing)
             log(f"Missing mandatory fields {missing} in '{ep.name}', skipping", PREFIX, "warning")
-            return False
+            return False, [msg]
 
     folder_name = _render_template(config.get_config("movie_settings")["folder_template_name"], info, sep=" ")
     out_dir = dest / folder_name
@@ -164,17 +153,17 @@ def _organize_movie(src: Path, dest: Path, info: dict, videos: list[Path], exclu
         if _safe_copy(video, out_dir / filename):
             moved = True
     _copy_extras(src, out_dir, excluded)
-    return moved
+    return moved, []
 
 
-def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excluded: set = None, error_path: Path = None) -> bool:
+def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excluded: set = None, error_path: Path = None) -> tuple[bool, list[str]]:
     ep = error_path or src
 
     title_missing = _check_mandatory(info, ["title", "dotted_title"])
     if title_missing:
-        _write_error(ep, ["The following mandatory fields could not be determined:\n"] + [f"  - {f}\n" for f in title_missing])
+        msg = "Missing mandatory fields: " + ", ".join(title_missing)
         log(f"Missing mandatory fields {title_missing} in '{ep.name}', skipping", PREFIX, "warning")
-        return False
+        return False, [msg]
 
     folder_name = _render_template(config.get_config("series_settings")["folder_template_name"], info, sep=" ")
     out_base = dest / folder_name
@@ -193,9 +182,9 @@ def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excl
         merged["dotted_title"] = info["dotted_title"]
         missing = _check_mandatory(merged, config.get_config("series_settings")["mandatory"])
         if missing:
-            _write_error(ep, ["The following mandatory fields could not be determined:\n"] + [f"  - {f}\n" for f in missing])
+            msg = "Missing mandatory fields: " + ", ".join(missing)
             log(f"Missing mandatory fields {missing} in '{ep.name}', skipping", PREFIX, "warning")
-            return False
+            return False, [msg]
         merged_per_video.append((video, merged))
 
     moved = False
@@ -224,15 +213,15 @@ def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excl
         rel = f.relative_to(mapped_src) if mapped_src else f.relative_to(src)
         _safe_copy(f, (mapped_dir or out_base) / rel)
 
-    return moved
+    return moved, []
 
 
-def organize(src: Path, info_override: dict = None):
+def organize(src: Path, info_override: dict = None) -> list[str]:
     src = Path(src)
 
     if not src.is_dir():
         log(f"'{src}' is not a directory, skipping", PREFIX, "warning")
-        return
+        return [f"'{src}' is not a directory"]
 
     log(f"Processing '{src.name}'...", PREFIX)
 
@@ -266,25 +255,27 @@ def organize(src: Path, info_override: dict = None):
 
     if not set(config.get_config("media_confidence_fields")).intersection(info):
         log(f"'{src.name}' does not look like media, skipping", PREFIX, "warning")
-        return
+        return [f"'{src.name}' does not look like media"]
 
     excluded = _get_excluded(src)
     content_root = _resolve_content_root(src)
     videos = _find_videos(content_root, excluded)
 
     if not videos:
-        _write_error(src, ["No video files found.\n"])
         log(f"No video files found in '{src.name}', skipping", PREFIX, "warning")
-        return
+        return ["No video files found"]
 
     log(f"Copying files from '{src.name}'...", PREFIX)
     if media_type == "movie":
-        moved = _organize_movie(content_root, Path(config.get_config("movie_destination")), info, videos, excluded, error_path=src)
+        moved, errors = _organize_movie(content_root, Path(config.get_config("movie_destination")), info, videos, excluded, error_path=src)
     elif media_type == "episode":
-        moved = _organize_series(content_root, Path(config.get_config("series_destination")), info, videos, excluded, error_path=src)
+        moved, errors = _organize_series(content_root, Path(config.get_config("series_destination")), info, videos, excluded, error_path=src)
     else:
         log(f"'{src.name}' has unknown media type '{media_type}', skipping", PREFIX, "warning")
-        return
+        return [f"Unknown media type '{media_type}'"]
+
+    if errors:
+        return errors
 
     if moved:
         log(f"Finished copying '{src.name}'", PREFIX, "success")
@@ -301,3 +292,5 @@ def organize(src: Path, info_override: dict = None):
             log(f"Removed source '{src.name}'", PREFIX)
         except Exception as exc:
             log(f"Could not remove source '{src.name}': {exc}", PREFIX, "error")
+
+    return []

@@ -266,6 +266,35 @@
       display: flex; justify-content: flex-end;
     }
 
+    .scan-item-progress {
+      height: 3px;
+      background: var(--surface-2);
+      overflow: hidden;
+    }
+    .scan-item-progress-bar {
+      height: 100%;
+      width: 40%;
+      background: var(--accent);
+      border-radius: 2px;
+      animation: org-slide 1.2s ease-in-out infinite;
+    }
+    @keyframes org-slide {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
+
+    .scan-item-errors {
+      padding: 8px 16px;
+      border-top: 1px solid rgba(239,68,68,.25);
+      background: rgba(239,68,68,.06);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .scan-item-error {
+      font-size: 11.5px; color: #f87171;
+      display: flex; align-items: baseline; gap: 6px;
+    }
+    .scan-item-error::before { content: '✕'; flex-shrink: 0; font-size: 10px; }
+
     /* ── Downloads section ───────────────────────────────────────────────── */
     .dl-header {
       display: flex; align-items: center;
@@ -577,16 +606,38 @@
       const btn  = card.querySelector('.btn-org');
       btn.textContent = 'Running…';
       btn.disabled = true;
+      // Clear previous errors
+      card.querySelectorAll('.scan-item-errors').forEach(el => el.remove());
+      card.style.borderColor = '';
+      // Show progress bar
+      const prog = document.createElement('div');
+      prog.className = 'scan-item-progress';
+      prog.innerHTML = '<div class="scan-item-progress-bar"></div>';
+      card.querySelector('.scan-item-footer').before(prog);
       fetch('/api/organize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: item.path, info: getItemInfo(i) }),
       })
+        .then(r => r.json())
+        .then(data => {
+          if (data.errors && data.errors.length) {
+            card.style.borderColor = 'rgba(239,68,68,.45)';
+            const errBox = document.createElement('div');
+            errBox.className = 'scan-item-errors';
+            errBox.innerHTML = data.errors.map(e =>
+              `<div class="scan-item-error">${escHtml(e)}</div>`
+            ).join('');
+            card.querySelector('.scan-item-footer').before(errBox);
+          } else {
+            card.classList.add('organized');
+          }
+        })
         .catch(() => {})
         .finally(() => {
+          prog.remove();
           btn.textContent = 'Organize';
           btn.disabled = false;
-          card.classList.add('organized');
         });
     }
 

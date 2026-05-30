@@ -223,10 +223,5 @@ def api_organize():
     if not path:
         return jsonify({"error": "path is required"}), 400
     info_override = data.get("info") or None
-    threading.Thread(
-        target=organize,
-        args=(Path(path),),
-        kwargs={"info_override": info_override},
-        daemon=True,
-    ).start()
-    return jsonify({"started": True, "path": path})
+    errors = organize(Path(path), info_override=info_override)
+    return jsonify({"errors": errors or []})
