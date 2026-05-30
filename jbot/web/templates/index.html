@@ -46,7 +46,7 @@
       gap: 28px;
     }
 
-    /* ── Header ─────────────────────────────────────────────────────────────── */
+    /* ── Header ───────────────────────────────────────────────────────────── */
     .header {
       display: flex;
       align-items: center;
@@ -61,14 +61,31 @@
       box-shadow: 0 0 8px var(--green);
       flex-shrink: 0;
     }
-    .brand-name {
-      font-size: 17px; font-weight: 600;
-      letter-spacing: -0.025em;
-      color: var(--text-1);
-    }
-    .brand-sub { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+    .brand-name { font-size: 17px; font-weight: 600; letter-spacing: -0.025em; }
+    .brand-sub  { font-size: 11px; color: var(--text-3); margin-top: 1px; }
 
-    /* ── Section label ───────────────────────────────────────────────────────── */
+    .icon-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-2);
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 0.13s, background 0.13s, border-color 0.13s;
+    }
+    .icon-btn:hover { color: var(--text-1); background: var(--surface-2); border-color: var(--border-2); }
+    .icon-btn svg { width: 16px; height: 16px; }
+
+    .btn-danger {
+      background: transparent; color: var(--red);
+      border: 1px solid rgba(239,68,68,.25);
+    }
+    .btn-danger:hover:not(:disabled) { background: rgba(239,68,68,.08); }
+    .btn-sm { padding: 5px 11px; font-size: 12px; }
+
+    /* ── Section label ─────────────────────────────────────────────────────── */
     .section-label {
       font-size: 10.5px; font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.09em;
@@ -76,110 +93,36 @@
       margin-bottom: 8px;
     }
 
-    /* ── Toggle card list ───────────────────────────────────────────────────── */
-    .card-list {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-    .toggle-row {
-      display: flex; align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 13px 18px;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.12s;
-    }
-    .toggle-row:last-child { border-bottom: none; }
-    .toggle-row:hover { background: var(--surface-2); }
-
-    .toggle-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .toggle-name { font-size: 13.5px; font-weight: 500; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .toggle-desc { font-size: 11.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    /* Toggle switch */
-    .switch { position: relative; display: inline-block; width: 38px; height: 21px; flex-shrink: 0; }
-    .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
-    .slider {
-      position: absolute; inset: 0;
-      cursor: pointer;
-      background: var(--border-2);
-      border-radius: 21px;
-      transition: background 0.18s;
-    }
-    .slider::before {
-      content: '';
-      position: absolute;
-      width: 15px; height: 15px;
-      left: 3px; top: 3px;
-      background: #fff;
-      border-radius: 50%;
-      transition: transform 0.18s cubic-bezier(.4,0,.2,1);
-      box-shadow: 0 1px 3px rgba(0,0,0,.4);
-    }
-    input:checked + .slider { background: var(--accent); }
-    input:checked + .slider::before { transform: translateX(17px); }
-    input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-    /* ── Action cards ────────────────────────────────────────────────────────── */
-    .action-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
+    /* ── Action card ───────────────────────────────────────────────────────── */
     .action-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 16px 18px;
     }
-    .action-card.full { grid-column: 1 / -1; }
-    .action-title {
-      font-size: 13px; font-weight: 500;
-      color: var(--text-1);
-      margin-bottom: 12px;
+    .action-card-row {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 16px;
     }
-    .action-desc { font-size: 11.5px; color: var(--text-3); margin-bottom: 14px; line-height: 1.55; }
+    .action-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+    .action-desc  { font-size: 11.5px; color: var(--text-3); line-height: 1.55; }
 
-    /* ── Buttons ─────────────────────────────────────────────────────────────── */
+    /* ── Buttons ───────────────────────────────────────────────────────────── */
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
       padding: 8px 16px;
       border: none; border-radius: 7px;
-      font-size: 13px; font-weight: 600;
-      font-family: inherit;
+      font-size: 13px; font-weight: 600; font-family: inherit;
       cursor: pointer;
-      transition: background 0.13s, opacity 0.13s, color 0.13s;
+      transition: background 0.13s, opacity 0.13s;
       white-space: nowrap;
-      text-decoration: none;
     }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary  { background: var(--accent); color: #fff; }
-    .btn-primary:hover:not(:disabled)  { background: var(--accent-h); }
-    .btn-ghost    { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); }
-    .btn-ghost:hover:not(:disabled)    { background: var(--border); color: var(--text-1); }
-    .btn-danger   { background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,.25); }
-    .btn-danger:hover:not(:disabled)   { background: rgba(239,68,68,.08); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-h); }
+    .btn-sm { padding: 5px 13px; font-size: 12px; }
 
-    /* ── Path input ──────────────────────────────────────────────────────────── */
-    .input-row { display: flex; gap: 8px; }
-    .path-input {
-      flex: 1; min-width: 0;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      padding: 8px 12px;
-      font-size: 12.5px;
-      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
-      color: var(--text-1);
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    .path-input::placeholder { color: var(--text-3); }
-    .path-input:focus { border-color: var(--accent); }
-
-    /* ── Log panel ───────────────────────────────────────────────────────────── */
+    /* ── Log panel ─────────────────────────────────────────────────────────── */
     .log-panel {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -215,10 +158,10 @@
 
     #log-output {
       padding: 10px 16px;
-      height: calc(100vh - 580px);
+      height: calc(100vh - 420px);
       min-height: 200px;
       overflow-y: auto;
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
       font-size: 11.5px;
       line-height: 1.75;
     }
@@ -238,12 +181,214 @@
     .log-success .log-msg { color: #34d399; }
     .log-success .log-prefix { color: #34d399; }
 
-    /* ── Responsive ──────────────────────────────────────────────────────────── */
+    /* ── Scan results ──────────────────────────────────────────────────────── */
+    .scan-results-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin: 14px 0 10px;
+    }
+    .scan-count { font-size: 12px; color: var(--text-2); }
+    .scan-list  { display: flex; flex-direction: column; gap: 8px; }
+    .scan-empty {
+      text-align: center; padding: 22px;
+      color: var(--text-3); font-size: 13px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .scan-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .scan-item.low-confidence { border-color: rgba(245,158,11,.35); }
+    .scan-item.organized      { border-color: rgba(34,197,94,.35); opacity: .65; }
+
+    .scan-item-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .scan-item-name {
+      font-size: 12px;
+      font-family: 'JetBrains Mono','Fira Code','Courier New',monospace;
+      word-break: break-all; flex: 1; min-width: 0;
+    }
+    .scan-item-badges { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+    .type-badge {
+      font-size: 9.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      padding: 2px 7px; border-radius: 4px;
+    }
+    .type-movie   { background: rgba(99,102,241,.2);  color: #a5b4fc; }
+    .type-episode { background: rgba(34,197,94,.14);  color: #6ee7b7; }
+    .type-unknown { background: var(--surface-2);     color: var(--text-3); }
+    .warn-badge {
+      font-size: 9.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      padding: 2px 7px; border-radius: 4px;
+      background: rgba(245,158,11,.14); color: var(--amber);
+    }
+
+    .scan-fields {
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px 10px;
+    }
+    .field-group { display: flex; flex-direction: column; gap: 3px; }
+    .field-label {
+      font-size: 9.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-3);
+    }
+    .field-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 12px; font-family: inherit;
+      color: var(--text-1); outline: none;
+      transition: border-color 0.15s; width: 100%;
+    }
+    .field-input:focus { border-color: var(--accent); }
+    .field-input::placeholder { color: var(--text-3); }
+    .field-select { cursor: pointer; appearance: none; }
+
+    .scan-item-footer {
+      padding: 9px 16px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end;
+    }
+
+    .scan-item-progress {
+      height: 3px;
+      background: var(--surface-2);
+      overflow: hidden;
+    }
+    .scan-item-progress-bar {
+      height: 100%;
+      width: 40%;
+      background: var(--accent);
+      border-radius: 2px;
+      animation: org-slide 1.2s ease-in-out infinite;
+    }
+    @keyframes org-slide {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
+
+    .scan-item-errors {
+      padding: 8px 16px;
+      border-top: 1px solid rgba(239,68,68,.25);
+      background: rgba(239,68,68,.06);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .scan-item-error {
+      font-size: 11.5px; color: #f87171;
+      display: flex; align-items: baseline; gap: 6px;
+    }
+    .scan-item-error::before { content: '✕'; flex-shrink: 0; font-size: 10px; }
+
+    /* ── Downloads section ───────────────────────────────────────────────── */
+    .dl-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px; gap: 10px;
+    }
+    .dl-header-left { display: flex; align-items: center; gap: 8px; }
+    .dl-state-badge {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 2px 8px; border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--text-3);
+    }
+    .dl-state-badge.running  { color: var(--green);  border-color: rgba(34,197,94,.35);  background: rgba(34,197,94,.08); }
+    .dl-state-badge.paused   { color: var(--amber);  border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.08); }
+    .dl-state-badge.stopped  { color: var(--text-3); border-color: var(--border); }
+    .dl-controls { display: flex; gap: 6px; }
+
+    .dl-list { display: flex; flex-direction: column; gap: 8px; }
+    .dl-empty {
+      text-align: center; padding: 22px;
+      color: var(--text-3); font-size: 13px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .dl-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .dl-item-top {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .dl-item-name {
+      font-size: 12.5px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      flex: 1; min-width: 0;
+    }
+    .dl-item-status {
+      font-size: 11px; color: var(--text-3);
+      flex-shrink: 0; white-space: nowrap;
+    }
+    .dl-item-status.running { color: var(--green); }
+    .dl-item-status.finished { color: #a78bfa; }
+
+    .dl-progress-track {
+      height: 4px; border-radius: 2px;
+      background: var(--surface-2); overflow: hidden;
+    }
+    .dl-progress-fill {
+      height: 100%; border-radius: 2px;
+      background: var(--accent);
+      transition: width 0.4s ease;
+    }
+    .dl-progress-fill.finished { background: #a78bfa; }
+    .dl-progress-fill.stopped  { background: var(--text-3); }
+
+    .dl-item-meta {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 11px; color: var(--text-3);
+    }
+    .dl-meta-pct  { font-weight: 600; color: var(--text-2); min-width: 36px; }
+    .dl-meta-speed { color: var(--green); }
+
+    .dl-item-footer {
+      display: flex; justify-content: flex-end;
+      gap: 6px; padding-top: 4px;
+    }
+    .btn-pkg {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px; font-weight: 600; font-family: inherit;
+      cursor: pointer;
+      transition: background 0.13s, opacity 0.13s;
+      white-space: nowrap;
+    }
+    .btn-pkg:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-pkg-start  { background: rgba(99,102,241,.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,.3); }
+    .btn-pkg-start:hover:not(:disabled)  { background: rgba(99,102,241,.28); }
+    .btn-pkg-stop   { background: transparent; color: var(--text-2); border: 1px solid var(--border); }
+    .btn-pkg-stop:hover:not(:disabled)   { background: var(--surface-2); }
+    .btn-pkg-remove { background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,.25); }
+    .btn-pkg-remove:hover:not(:disabled) { background: rgba(239,68,68,.08); }
+
     @media (max-width: 480px) {
       body { padding: 20px 12px 48px; }
-      .action-grid { grid-template-columns: 1fr; }
-      .action-card.full { grid-column: auto; }
-      .input-row { flex-direction: column; }
+      .scan-fields { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -259,88 +404,48 @@
           <div class="brand-sub">Download automation</div>
         </div>
       </div>
-      <button class="btn btn-danger" id="btn-restart" onclick="restart()">Restart</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn btn-danger btn-sm" onclick="restart()">Restart</button>
+        <a href="/settings" class="icon-btn" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+      </div>
     </header>
 
-    <!-- Watchers -->
+    <!-- Downloads -->
     <section>
-      <div class="section-label">Automation</div>
-      <div class="card-list">
-
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-name">Autostart Downloads</span>
-            <span class="toggle-desc">Automatically start queued links</span>
-          </div>
-          <label class="switch" title="Toggle autostart">
-            <input type="checkbox" id="toggle-linkgrabber" onchange="toggle('linkgrabber')">
-            <span class="slider"></span>
-          </label>
+      <div class="dl-header">
+        <div class="dl-header-left">
+          <span class="section-label" style="margin-bottom:0">Downloads</span>
+          <span id="dl-state-badge" class="dl-state-badge">—</span>
         </div>
-
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-name">Auto-organize on Finish</span>
-            <span class="toggle-desc">Rename, clean up and move completed downloads</span>
-          </div>
-          <label class="switch" title="Toggle auto-organize">
-            <input type="checkbox" id="toggle-downloads" onchange="toggle('downloads')">
-            <span class="slider"></span>
-          </label>
+        <div class="dl-controls">
+          <button class="btn btn-sm" id="btn-dl-stop"
+            style="background:transparent;color:var(--text-2);border:1px solid var(--border);"
+            onclick="dlStop()">Stop All</button>
+          <button class="btn btn-primary btn-sm" id="btn-dl-start"
+            onclick="dlStart()">Start All</button>
         </div>
-
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-name">Plex Library Scan</span>
-            <span class="toggle-desc">Trigger a Plex scan after each organize</span>
-          </div>
-          <label class="switch" title="Toggle Plex scan">
-            <input type="checkbox" id="toggle-plex" onchange="toggle('plex')">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-name">Delete Source After Copy</span>
-            <span class="toggle-desc">Remove the download folder once moved</span>
-          </div>
-          <label class="switch" title="Toggle delete source">
-            <input type="checkbox" id="toggle-delete_source" onchange="toggle('delete_source')">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-name">Auto-answer Dialogs</span>
-            <span class="toggle-desc">Dismiss JDownloader prompts automatically</span>
-          </div>
-          <label class="switch" title="Toggle dialog auto-answer">
-            <input type="checkbox" id="toggle-dialogs" onchange="toggle('dialogs')">
-            <span class="slider"></span>
-          </label>
-        </div>
-
       </div>
+      <div id="dl-list" class="dl-list"></div>
     </section>
 
-    <!-- Actions -->
+    <!-- Scan -->
     <section>
-      <div class="section-label">Actions</div>
-      <div class="action-grid">
-
-        <div class="action-card full">
-          <div class="action-title">Organize a folder</div>
-          <div class="input-row">
-            <input id="organize-path" class="path-input" type="text"
-                   placeholder="/downloads/My.Show.S01E01.1080p"
-                   spellcheck="false" autocomplete="off">
-            <button id="btn-organize" class="btn btn-primary" onclick="organizeManual()">Organize</button>
+      <div class="section-label">Scanner</div>
+      <div class="action-card">
+        <div class="action-card-row">
+          <div>
+            <div class="action-title">Scan Output Folder</div>
+            <div class="action-desc">Detect downloaded media, review &amp; edit properties, then organize.</div>
           </div>
+          <button id="btn-scan" class="btn btn-primary" style="flex-shrink:0;" onclick="scanFolder()">Scan</button>
         </div>
-
       </div>
+      <div id="scan-results"></div>
     </section>
 
     <!-- Log -->
@@ -357,53 +462,216 @@
       </div>
     </section>
 
-  </div><!-- /.layout -->
+  </div>
 
   <script>
-    // ── Watchers ─────────────────────────────────────────────────────────────
-    function applyStatus(data) {
-      for (const [key, enabled] of Object.entries(data)) {
-        const chk = document.getElementById('toggle-' + key);
-        if (!chk) continue;
-        chk.checked = !!enabled;
-      }
-    }
-    function refresh() {
-      fetch('/api/status').then(r => r.json()).then(applyStatus).catch(() => {});
-    }
-    function toggle(watcher) {
-      fetch('/api/toggle/' + watcher, { method: 'POST' })
-        .then(r => r.json()).then(applyStatus).catch(() => {});
-    }
+    // ── Scan ──────────────────────────────────────────────────────────────────
+    let _scanItems = [];
 
-    // ── Restart ───────────────────────────────────────────────────────────────
-    function restart() {
-      const btn = document.getElementById('btn-restart');
-      btn.textContent = 'Restarting…';
+    function scanFolder() {
+      const btn = document.getElementById('btn-scan');
+      btn.textContent = 'Scanning…';
       btn.disabled = true;
-      fetch('/api/restart', { method: 'POST' })
-        .catch(() => {})
-        .finally(() => setTimeout(() => { btn.textContent = 'Restart'; btn.disabled = false; }, 3000));
+      document.getElementById('scan-results').innerHTML = '';
+      fetch('/api/scan')
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          _scanItems = data;
+          renderScanResults(data);
+        })
+        .catch(err => {
+          document.getElementById('scan-results').innerHTML =
+            `<div class="scan-empty" style="color:var(--red);">Scan failed: ${escHtml(String(err))}</div>`;
+        })
+        .finally(() => { btn.textContent = 'Scan'; btn.disabled = false; });
     }
 
-    // ── Manual organize ───────────────────────────────────────────────────────
-    function organizeManual() {
-      const input = document.getElementById('organize-path');
-      const path  = input.value.trim();
-      if (!path) { input.focus(); return; }
-      const btn = document.getElementById('btn-organize');
+    function renderScanResults(items) {
+      const container = document.getElementById('scan-results');
+      if (!items.length) {
+        container.innerHTML = '<div class="scan-empty">No media folders found.</div>';
+        return;
+      }
+      const header = `
+        <div class="scan-results-header">
+          <span class="scan-count">${items.length} folder${items.length !== 1 ? 's' : ''} found</span>
+          <button class="btn btn-primary btn-sm" onclick="organizeAll()">Organize All</button>
+        </div>`;
+      const list = items.map((item, i) => renderScanItem(item, i)).join('');
+      container.innerHTML = header + '<div class="scan-list">' + list + '</div>';
+    }
+
+    function renderScanItem(item, i) {
+      const type = item.type || '';
+      const badgeClass = type === 'movie' ? 'type-movie' : type === 'episode' ? 'type-episode' : 'type-unknown';
+      const warnBadge  = item.has_confidence ? '' : '<span class="warn-badge">low confidence</span>';
+      const info = item.info || {};
+      const lowCls = item.has_confidence ? '' : ' low-confidence';
+      const v = (key, fallback = '') => escHtml(String(info[key] ?? fallback));
+      const inp = (cls, key, placeholder = '') =>
+        `<input class="field-input ${cls}" value="${v(key)}" placeholder="${escHtml(placeholder)}">`;
+      const episodeOnlyStyle = type !== 'episode' ? ' style="display:none"' : '';
+      return `
+      <div class="scan-item${lowCls}" id="scan-item-${i}">
+        <div class="scan-item-header">
+          <span class="scan-item-name">${escHtml(item.name)}</span>
+          <div class="scan-item-badges">
+            ${warnBadge}
+            <span class="type-badge ${badgeClass}">${type || 'unknown'}</span>
+          </div>
+        </div>
+        <div class="scan-fields">
+          <div class="field-group">
+            <label class="field-label">Type</label>
+            <select class="field-input field-select field-type" onchange="onTypeChange(this,${i})">
+              <option value="movie"   ${type==='movie'   ? 'selected' : ''}>Movie</option>
+              <option value="episode" ${type==='episode' ? 'selected' : ''}>Episode</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Title</label>
+            ${inp('field-title', 'title')}
+          </div>
+          <div class="field-group">
+            <label class="field-label">Year</label>
+            ${inp('field-year', 'year', 'e.g. 2024')}
+          </div>
+          <div class="field-group field-ep"${episodeOnlyStyle}>
+            <label class="field-label">Season</label>
+            ${inp('field-season', 'season', 'e.g. 1')}
+          </div>
+          <div class="field-group field-ep"${episodeOnlyStyle}>
+            <label class="field-label">Episode</label>
+            ${inp('field-episode', 'episode', 'e.g. 4')}
+          </div>
+          <div class="field-group field-ep"${episodeOnlyStyle}>
+            <label class="field-label">Episode Title</label>
+            ${inp('field-episode-title', 'episode_title')}
+          </div>
+          <div class="field-group">
+            <label class="field-label">Resolution</label>
+            ${inp('field-screen-size', 'screen_size', 'e.g. 1080p')}
+          </div>
+          <div class="field-group">
+            <label class="field-label">Video Codec</label>
+            ${inp('field-video-codec', 'video_codec', 'e.g. x265')}
+          </div>
+          <div class="field-group">
+            <label class="field-label">Source</label>
+            ${inp('field-source', 'source', 'e.g. BluRay')}
+          </div>
+          <div class="field-group">
+            <label class="field-label">Audio Codec</label>
+            ${inp('field-audio-codec', 'audio_codec', 'e.g. DTS')}
+          </div>
+        </div>
+        <div class="scan-item-footer">
+          <button class="btn btn-sm btn-remove" onclick="removeFolder(${i})" style="background:transparent;color:var(--red);border:1px solid rgba(239,68,68,.25);margin-right:auto;">Remove</button>
+          <button class="btn btn-primary btn-sm btn-org" onclick="organizeItem(${i})">Organize</button>
+        </div>
+      </div>`;
+    }
+
+    function onTypeChange(sel, i) {
+      const card = document.getElementById('scan-item-' + i);
+      const isEpisode = sel.value === 'episode';
+      card.querySelectorAll('.field-ep').forEach(el => el.style.display = isEpisode ? '' : 'none');
+      const badge = card.querySelector('.type-badge');
+      badge.className = 'type-badge ' + (isEpisode ? 'type-episode' : 'type-movie');
+      badge.textContent = sel.value;
+    }
+
+    function getItemInfo(i) {
+      const card = document.getElementById('scan-item-' + i);
+      const gv = cls => (card.querySelector('.' + cls)?.value ?? '').trim();
+      return {
+        type:          gv('field-type') || undefined,
+        title:         gv('field-title') || undefined,
+        year:          gv('field-year') || undefined,
+        season:        gv('field-season') || undefined,
+        episode:       gv('field-episode') || undefined,
+        episode_title: gv('field-episode-title') || undefined,
+        screen_size:   gv('field-screen-size') || undefined,
+        video_codec:   gv('field-video-codec') || undefined,
+        source:        gv('field-source') || undefined,
+        audio_codec:   gv('field-audio-codec') || undefined,
+      };
+    }
+
+    function organizeItem(i) {
+      const item = _scanItems[i];
+      if (!item) return;
+      const card = document.getElementById('scan-item-' + i);
+      const btn  = card.querySelector('.btn-org');
       btn.textContent = 'Running…';
       btn.disabled = true;
+      // Clear previous errors
+      card.querySelectorAll('.scan-item-errors').forEach(el => el.remove());
+      card.style.borderColor = '';
+      // Show progress bar
+      const prog = document.createElement('div');
+      prog.className = 'scan-item-progress';
+      prog.innerHTML = '<div class="scan-item-progress-bar"></div>';
+      card.querySelector('.scan-item-footer').before(prog);
       fetch('/api/organize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path })
+        body: JSON.stringify({ path: item.path, info: getItemInfo(i) }),
       })
+        .then(r => r.json())
+        .then(data => {
+          if (data.errors && data.errors.length) {
+            card.style.borderColor = 'rgba(239,68,68,.45)';
+            const errBox = document.createElement('div');
+            errBox.className = 'scan-item-errors';
+            errBox.innerHTML = data.errors.map(e =>
+              `<div class="scan-item-error">${escHtml(e)}</div>`
+            ).join('');
+            card.querySelector('.scan-item-footer').before(errBox);
+          } else {
+            card.classList.add('organized');
+          }
+        })
         .catch(() => {})
-        .finally(() => { btn.textContent = 'Organize'; btn.disabled = false; });
+        .finally(() => {
+          prog.remove();
+          btn.textContent = 'Organize';
+          btn.disabled = false;
+        });
     }
-    document.getElementById('organize-path')
-      .addEventListener('keydown', e => { if (e.key === 'Enter') organizeManual(); });
+
+    function organizeAll() { _scanItems.forEach((_, i) => organizeItem(i)); }
+
+    function removeFolder(i) {
+      const item = _scanItems[i];
+      if (!item) return;
+      const card = document.getElementById('scan-item-' + i);
+      const btn  = card.querySelector('.btn-remove');
+      if (!confirm('Delete "' + item.name + '" and all its contents?')) return;
+      btn.textContent = 'Removing…';
+      btn.disabled = true;
+      fetch('/api/scan/folder', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: item.path }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          card.remove();
+          _scanItems[i] = null;
+          const remaining = _scanItems.filter(Boolean).length;
+          const countEl = document.querySelector('.scan-count');
+          if (countEl) countEl.textContent = remaining + ' folder' + (remaining !== 1 ? 's' : '') + ' found';
+          if (!remaining) document.getElementById('scan-results').innerHTML = '<div class="scan-empty">No media folders found.</div>';
+        })
+        .catch(err => {
+          alert('Remove failed: ' + err.message);
+          btn.textContent = 'Remove';
+          btn.disabled = false;
+        });
+    }
 
     // ── Logs ──────────────────────────────────────────────────────────────────
     let lastId = 0;
@@ -415,7 +683,7 @@
       if (!entries.length) return;
       const atBottom = output.scrollHeight - output.scrollTop <= output.clientHeight + 4;
       for (const e of entries) {
-        const line   = document.createElement('div');
+        const line = document.createElement('div');
         line.className = 'log-line log-' + e.type;
         const ts     = `<span class="log-ts">${escHtml(e.ts)}</span>`;
         const prefix = e.prefix ? `<span class="log-prefix">${escHtml(e.prefix)}</span>` : '';
@@ -428,7 +696,7 @@
     }
 
     function escHtml(s) {
-      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
     function pollLogs() {
@@ -436,9 +704,140 @@
         .then(r => r.json()).then(appendLogs).catch(() => {});
     }
 
-    refresh();
+    // ── Restart ───────────────────────────────────────────────────────────────
+    function restart() {
+      const btn = event.currentTarget;
+      btn.textContent = 'Restarting…';
+      btn.disabled = true;
+      fetch('/api/restart', { method: 'POST' })
+        .catch(() => {})
+        .finally(() => {
+          // Poll until the server is back up, then reload
+          const poll = setInterval(() => {
+            fetch('/api/logs?after=0')
+              .then(() => { clearInterval(poll); location.reload(); })
+              .catch(() => {});
+          }, 1000);
+        });
+    }
+
+    // ── Downloads ─────────────────────────────────────────────────────────────
+    function fmtBytes(b) {
+      if (b >= 1073741824) return (b / 1073741824).toFixed(2) + ' GB';
+      if (b >= 1048576)    return (b / 1048576).toFixed(1)  + ' MB';
+      if (b >= 1024)       return (b / 1024).toFixed(0)     + ' KB';
+      return b + ' B';
+    }
+    function fmtSpeed(bps) { return bps > 0 ? fmtBytes(bps) + '/s' : ''; }
+    function fmtEta(s) {
+      if (!s || s < 0) return '';
+      if (s < 60)   return s + 's';
+      if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+      return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
+    }
+
+    function renderDownloads(data) {
+      const badge = document.getElementById('dl-state-badge');
+      const state = (data.controller_state || '').toUpperCase();
+      badge.textContent = state || '—';
+      badge.className = 'dl-state-badge'
+        + (state === 'RUNNING' ? ' running' : state === 'PAUSE' ? ' paused' : ' stopped');
+
+      const list = document.getElementById('dl-list');
+      const pkgs = data.packages || [];
+      if (!pkgs.length) {
+        list.innerHTML = '<div class="dl-empty">No active downloads.</div>';
+        return;
+      }
+      list.innerHTML = pkgs.map(pkg => {
+        const pct     = pkg.percent ?? 0;
+        const running = pkg.running && !pkg.finished;
+        const finished = pkg.finished;
+        const fillCls = finished ? ' finished' : (!running ? ' stopped' : '');
+        const statusCls = finished ? 'finished' : (running ? 'running' : '');
+        const statusTxt = pkg.status || (finished ? 'Finished' : running ? 'Running' : 'Stopped');
+        const speed = running ? fmtSpeed(pkg.speed_bps) : '';
+        const eta   = running ? fmtEta(pkg.eta_seconds)  : '';
+        const size  = pkg.bytes_total > 0
+          ? fmtBytes(pkg.bytes_loaded) + ' / ' + fmtBytes(pkg.bytes_total)
+          : (pkg.bytes_loaded > 0 ? fmtBytes(pkg.bytes_loaded) : '');
+        return `
+        <div class="dl-item">
+          <div class="dl-item-top">
+            <span class="dl-item-name" title="${escHtml(pkg.name || '')}">${escHtml(pkg.name || 'Unknown')}</span>
+            <span class="dl-item-status ${statusCls}">${escHtml(statusTxt)}</span>
+          </div>
+          <div class="dl-progress-track">
+            <div class="dl-progress-fill${fillCls}" style="width:${pct}%"></div>
+          </div>
+          <div class="dl-item-meta">
+            <span class="dl-meta-pct">${pct}%</span>
+            ${size   ? `<span>${escHtml(size)}</span>` : ''}
+            ${speed  ? `<span class="dl-meta-speed">${escHtml(speed)}</span>` : ''}
+            ${eta    ? `<span>ETA ${escHtml(eta)}</span>` : ''}
+          </div>
+          <div class="dl-item-footer">
+            <button class="btn-pkg btn-pkg-start"  onclick="dlPkgStart(${pkg.uuid},this)">&#9654; Start</button>
+            <button class="btn-pkg btn-pkg-stop"   onclick="dlPkgStop(${pkg.uuid},this)">&#9646;&#9646; Stop</button>
+            <button class="btn-pkg btn-pkg-remove" onclick="dlPkgRemove(${pkg.uuid},this)">&#10005; Remove</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function pollDownloads() {
+      fetch('/api/downloads')
+        .then(r => r.json())
+        .then(renderDownloads)
+        .catch(() => {});
+    }
+
+    function dlStart() {
+      const btn = document.getElementById('btn-dl-start');
+      btn.disabled = true;
+      fetch('/api/downloads/start', { method: 'POST' })
+        .then(() => pollDownloads())
+        .catch(() => {})
+        .finally(() => { btn.disabled = false; });
+    }
+
+    function dlStop() {
+      const btn = document.getElementById('btn-dl-stop');
+      btn.disabled = true;
+      fetch('/api/downloads/stop', { method: 'POST' })
+        .then(() => pollDownloads())
+        .catch(() => {})
+        .finally(() => { btn.disabled = false; });
+    }
+
+    function dlPkgStart(uuid, btn) {
+      btn.disabled = true;
+      fetch(`/api/downloads/${uuid}/start`, { method: 'POST' })
+        .then(() => pollDownloads())
+        .catch(() => {})
+        .finally(() => { btn.disabled = false; });
+    }
+
+    function dlPkgStop(uuid, btn) {
+      btn.disabled = true;
+      fetch(`/api/downloads/${uuid}/stop`, { method: 'POST' })
+        .then(() => pollDownloads())
+        .catch(() => {})
+        .finally(() => { btn.disabled = false; });
+    }
+
+    function dlPkgRemove(uuid, btn) {
+      btn.disabled = true;
+      fetch(`/api/downloads/${uuid}`, { method: 'DELETE' })
+        .then(() => pollDownloads())
+        .catch(() => {})
+        .finally(() => { btn.disabled = false; });
+    }
+
+    pollDownloads();
+    setInterval(pollDownloads, 4000);
+
     pollLogs();
-    setInterval(refresh,  5000);
     setInterval(pollLogs, 2000);
   </script>
 </body>

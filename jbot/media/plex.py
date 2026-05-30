@@ -1,40 +1,34 @@
 import requests
-import os
-
+import config
 from core import log
 
 PREFIX = "[PLEX-API]"
-PLEX_TOKEN = os.getenv("PLEX_TOKEN", "")
-PLEX_API_ROOT = os.getenv("PLEX_API_ROOT", "")
-REQUEST_TIMEOUT_SECONDS = 10
-PLEX_MOVIE_LIB_NAME = os.getenv("PLEX_MOVIE_LIB_NAME", "")
-PLEX_SHOW_LIB_NAME = os.getenv("PLEX_SHOW_LIB_NAME", "")
 
 
 def plex_check():
-    return bool(PLEX_TOKEN and PLEX_API_ROOT)
+    return bool(config.get_config("plex_token") and config.get_config("plex_api_root"))
 
 
 def plex_library_get_all():
     headers = {
-        "X-Plex-Token": PLEX_TOKEN,
+        "X-Plex-Token": config.get_config("plex_token"),
         "Accept": "application/json",
     }
     try:
         res = requests.get(
-            f"{PLEX_API_ROOT}/library/sections",
+            f"{config.get_config("plex_api_root")}/library/sections",
             headers=headers,
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            timeout=config.get_config("request_timeout_seconds"),
         )
         res.raise_for_status()
     except requests.exceptions.ConnectionError:
-        log(f"Could not connect to Plex at {PLEX_API_ROOT}. Check IP/port.", PREFIX, "error")
+        log(f"Could not connect to Plex at {config.get_config("plex_api_root")}. Check IP/port.", PREFIX, "error")
         return []
     except requests.exceptions.HTTPError as e:
         log(f"Plex returned HTTP {e.response.status_code} when fetching libraries.", PREFIX, "error")
         return []
     except requests.exceptions.Timeout:
-        log(f"Request to Plex timed out after {REQUEST_TIMEOUT_SECONDS}s.", PREFIX, "error")
+        log(f"Request to Plex timed out after {config.get_config("request_timeout_seconds")}s.", PREFIX, "error")
         return []
     return res.json()["MediaContainer"]["Directory"]
 
@@ -62,12 +56,12 @@ def plex_scan_library(lib_type: str):
         return
 
     headers = {
-        "X-Plex-Token": PLEX_TOKEN,
+        "X-Plex-Token": config.get_config("plex_token"),
         "Accept": "application/json",
     }
     library_names = {
-        "movie": [PLEX_MOVIE_LIB_NAME] if PLEX_MOVIE_LIB_NAME else None,
-        "show":  [PLEX_SHOW_LIB_NAME]  if PLEX_SHOW_LIB_NAME  else None,
+        "movie": [config.get_config("plex_movie_lib_name")] if config.get_config("plex_movie_lib_name") else None,
+        "show":  [config.get_config("plex_show_lib_name")]  if config.get_config("plex_show_lib_name")  else None,
     }
     section_id = plex_library_get_id(lib_type, library_names[lib_type])
     if section_id is None:
@@ -75,18 +69,18 @@ def plex_scan_library(lib_type: str):
         return
     try:
         res = requests.get(
-            f"{PLEX_API_ROOT}/library/sections/{section_id}/refresh",
+            f"{config.get_config("plex_api_root")}/library/sections/{section_id}/refresh",
             headers=headers,
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            timeout=config.get_config("request_timeout_seconds"),
         )
         res.raise_for_status()
     except requests.exceptions.ConnectionError:
-        log(f"Could not connect to Plex at {PLEX_API_ROOT}. Check IP/port.", PREFIX, "error")
+        log(f"Could not connect to Plex at {config.get_config("plex_api_root")}. Check IP/port.", PREFIX, "error")
         return
     except requests.exceptions.HTTPError as e:
         log(f"Plex returned HTTP {e.response.status_code} when triggering scan.", PREFIX, "error")
         return
     except requests.exceptions.Timeout:
-        log(f"Scan request timed out after {REQUEST_TIMEOUT_SECONDS}s.", PREFIX, "error")
+        log(f"Scan request timed out after {config.get_config("request_timeout_seconds")}s.", PREFIX, "error")
         return
     log(f"Scan triggered for {lib_type} library (section {section_id}).", PREFIX)
