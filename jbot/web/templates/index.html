@@ -266,6 +266,97 @@
       display: flex; justify-content: flex-end;
     }
 
+    /* ── Downloads section ───────────────────────────────────────────────── */
+    .dl-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px; gap: 10px;
+    }
+    .dl-header-left { display: flex; align-items: center; gap: 8px; }
+    .dl-state-badge {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 2px 8px; border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--text-3);
+    }
+    .dl-state-badge.running  { color: var(--green);  border-color: rgba(34,197,94,.35);  background: rgba(34,197,94,.08); }
+    .dl-state-badge.paused   { color: var(--amber);  border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.08); }
+    .dl-state-badge.stopped  { color: var(--text-3); border-color: var(--border); }
+    .dl-controls { display: flex; gap: 6px; }
+
+    .dl-list { display: flex; flex-direction: column; gap: 8px; }
+    .dl-empty {
+      text-align: center; padding: 22px;
+      color: var(--text-3); font-size: 13px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .dl-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .dl-item-top {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .dl-item-name {
+      font-size: 12.5px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      flex: 1; min-width: 0;
+    }
+    .dl-item-status {
+      font-size: 11px; color: var(--text-3);
+      flex-shrink: 0; white-space: nowrap;
+    }
+    .dl-item-status.running { color: var(--green); }
+    .dl-item-status.finished { color: #a78bfa; }
+
+    .dl-progress-track {
+      height: 4px; border-radius: 2px;
+      background: var(--surface-2); overflow: hidden;
+    }
+    .dl-progress-fill {
+      height: 100%; border-radius: 2px;
+      background: var(--accent);
+      transition: width 0.4s ease;
+    }
+    .dl-progress-fill.finished { background: #a78bfa; }
+    .dl-progress-fill.stopped  { background: var(--text-3); }
+
+    .dl-item-meta {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 11px; color: var(--text-3);
+    }
+    .dl-meta-pct  { font-weight: 600; color: var(--text-2); min-width: 36px; }
+    .dl-meta-speed { color: var(--green); }
+
+    .dl-item-footer {
+      display: flex; justify-content: flex-end;
+      gap: 6px; padding-top: 4px;
+    }
+    .btn-pkg {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px; font-weight: 600; font-family: inherit;
+      cursor: pointer;
+      transition: background 0.13s, opacity 0.13s;
+      white-space: nowrap;
+    }
+    .btn-pkg:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-pkg-start  { background: rgba(99,102,241,.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,.3); }
+    .btn-pkg-start:hover:not(:disabled)  { background: rgba(99,102,241,.28); }
+    .btn-pkg-stop   { background: transparent; color: var(--text-2); border: 1px solid var(--border); }
+    .btn-pkg-stop:hover:not(:disabled)   { background: var(--surface-2); }
+    .btn-pkg-remove { background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,.25); }
+    .btn-pkg-remove:hover:not(:disabled) { background: rgba(239,68,68,.08); }
+
     @media (max-width: 480px) {
       body { padding: 20px 12px 48px; }
       .scan-fields { grid-template-columns: 1fr 1fr; }
@@ -294,6 +385,24 @@
       </a>
       </div>
     </header>
+
+    <!-- Downloads -->
+    <section>
+      <div class="dl-header">
+        <div class="dl-header-left">
+          <span class="section-label" style="margin-bottom:0">Downloads</span>
+          <span id="dl-state-badge" class="dl-state-badge">—</span>
+        </div>
+        <div class="dl-controls">
+          <button class="btn btn-sm" id="btn-dl-stop"
+            style="background:transparent;color:var(--text-2);border:1px solid var(--border);"
+            onclick="dlStop()">Stop All</button>
+          <button class="btn btn-primary btn-sm" id="btn-dl-start"
+            onclick="dlStart()">Start All</button>
+        </div>
+      </div>
+      <div id="dl-list" class="dl-list"></div>
+    </section>
 
     <!-- Scan -->
     <section>
@@ -429,6 +538,7 @@
           </div>
         </div>
         <div class="scan-item-footer">
+          <button class="btn btn-sm btn-remove" onclick="removeFolder(${i})" style="background:transparent;color:var(--red);border:1px solid rgba(239,68,68,.25);margin-right:auto;">Remove</button>
           <button class="btn btn-primary btn-sm btn-org" onclick="organizeItem(${i})">Organize</button>
         </div>
       </div>`;
@@ -482,6 +592,36 @@
 
     function organizeAll() { _scanItems.forEach((_, i) => organizeItem(i)); }
 
+    function removeFolder(i) {
+      const item = _scanItems[i];
+      if (!item) return;
+      const card = document.getElementById('scan-item-' + i);
+      const btn  = card.querySelector('.btn-remove');
+      if (!confirm('Delete "' + item.name + '" and all its contents?')) return;
+      btn.textContent = 'Removing…';
+      btn.disabled = true;
+      fetch('/api/scan/folder', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: item.path }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          card.remove();
+          _scanItems[i] = null;
+          const remaining = _scanItems.filter(Boolean).length;
+          const countEl = document.querySelector('.scan-count');
+          if (countEl) countEl.textContent = remaining + ' folder' + (remaining !== 1 ? 's' : '') + ' found';
+          if (!remaining) document.getElementById('scan-results').innerHTML = '<div class="scan-empty">No media folders found.</div>';
+        })
+        .catch(err => {
+          alert('Remove failed: ' + err.message);
+          btn.textContent = 'Remove';
+          btn.disabled = false;
+        });
+    }
+
     // ── Logs ──────────────────────────────────────────────────────────────────
     let lastId = 0;
     const output = document.getElementById('log-output');
@@ -529,6 +669,122 @@
           }, 1000);
         });
     }
+
+    // ── Downloads ─────────────────────────────────────────────────────────────
+    function fmtBytes(b) {
+      if (b >= 1073741824) return (b / 1073741824).toFixed(2) + ' GB';
+      if (b >= 1048576)    return (b / 1048576).toFixed(1)  + ' MB';
+      if (b >= 1024)       return (b / 1024).toFixed(0)     + ' KB';
+      return b + ' B';
+    }
+    function fmtSpeed(bps) { return bps > 0 ? fmtBytes(bps) + '/s' : ''; }
+    function fmtEta(s) {
+      if (!s || s < 0) return '';
+      if (s < 60)   return s + 's';
+      if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+      return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
+    }
+
+    function renderDownloads(data) {
+      const badge = document.getElementById('dl-state-badge');
+      const state = (data.controller_state || '').toUpperCase();
+      badge.textContent = state || '—';
+      badge.className = 'dl-state-badge'
+        + (state === 'RUNNING' ? ' running' : state === 'PAUSE' ? ' paused' : ' stopped');
+
+      const list = document.getElementById('dl-list');
+      const pkgs = data.packages || [];
+      if (!pkgs.length) {
+        list.innerHTML = '<div class="dl-empty">No active downloads.</div>';
+        return;
+      }
+      list.innerHTML = pkgs.map(pkg => {
+        const pct     = pkg.percent ?? 0;
+        const running = pkg.running && !pkg.finished;
+        const finished = pkg.finished;
+        const fillCls = finished ? ' finished' : (!running ? ' stopped' : '');
+        const statusCls = finished ? 'finished' : (running ? 'running' : '');
+        const statusTxt = pkg.status || (finished ? 'Finished' : running ? 'Running' : 'Stopped');
+        const speed = running ? fmtSpeed(pkg.speed_bps) : '';
+        const eta   = running ? fmtEta(pkg.eta_seconds)  : '';
+        const size  = pkg.bytes_total > 0
+          ? fmtBytes(pkg.bytes_loaded) + ' / ' + fmtBytes(pkg.bytes_total)
+          : (pkg.bytes_loaded > 0 ? fmtBytes(pkg.bytes_loaded) : '');
+        return `
+        <div class="dl-item">
+          <div class="dl-item-top">
+            <span class="dl-item-name" title="${escHtml(pkg.name || '')}">${escHtml(pkg.name || 'Unknown')}</span>
+            <span class="dl-item-status ${statusCls}">${escHtml(statusTxt)}</span>
+          </div>
+          <div class="dl-progress-track">
+            <div class="dl-progress-fill${fillCls}" style="width:${pct}%"></div>
+          </div>
+          <div class="dl-item-meta">
+            <span class="dl-meta-pct">${pct}%</span>
+            ${size   ? `<span>${escHtml(size)}</span>` : ''}
+            ${speed  ? `<span class="dl-meta-speed">${escHtml(speed)}</span>` : ''}
+            ${eta    ? `<span>ETA ${escHtml(eta)}</span>` : ''}
+          </div>
+          <div class="dl-item-footer">
+            <button class="btn-pkg btn-pkg-start"  onclick="dlPkgStart(${pkg.uuid},this)">&#9654; Start</button>
+            <button class="btn-pkg btn-pkg-stop"   onclick="dlPkgStop(${pkg.uuid},this)">&#9646;&#9646; Stop</button>
+            <button class="btn-pkg btn-pkg-remove" onclick="dlPkgRemove(${pkg.uuid},this)">&#10005; Remove</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function pollDownloads() {
+      fetch('/api/downloads')
+        .then(r => r.json())
+        .then(renderDownloads)
+        .catch(() => {});
+    }
+
+    function dlStart() {
+      const btn = document.getElementById('btn-dl-start');
+      btn.disabled = true;
+      fetch('/api/downloads/start', { method: 'POST' })
+        .then(() => pollDownloads())
+        .catch(() => {})
+        .finally(() => { btn.disabled = false; });
+    }
+
+    function dlStop() {
+      const btn = document.getElementById('btn-dl-stop');
+      btn.disabled = true;
+      fetch('/api/downloads/stop', { method: 'POST' })
+        .then(() => pollDownloads())
+        .catch(() => {})
+        .finally(() => { btn.disabled = false; });
+    }
+
+    function dlPkgStart(uuid, btn) {
+      btn.disabled = true;
+      fetch(`/api/downloads/${uuid}/start`, { method: 'POST' })
+        .then(() => pollDownloads())
+        .catch(() => {})
+        .finally(() => { btn.disabled = false; });
+    }
+
+    function dlPkgStop(uuid, btn) {
+      btn.disabled = true;
+      fetch(`/api/downloads/${uuid}/stop`, { method: 'POST' })
+        .then(() => pollDownloads())
+        .catch(() => {})
+        .finally(() => { btn.disabled = false; });
+    }
+
+    function dlPkgRemove(uuid, btn) {
+      btn.disabled = true;
+      fetch(`/api/downloads/${uuid}`, { method: 'DELETE' })
+        .then(() => pollDownloads())
+        .catch(() => {})
+        .finally(() => { btn.disabled = false; });
+    }
+
+    pollDownloads();
+    setInterval(pollDownloads, 4000);
 
     pollLogs();
     setInterval(pollLogs, 2000);

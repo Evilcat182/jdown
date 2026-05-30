@@ -21,6 +21,20 @@ _PACKAGES_QUERY = {
     "status":                     True,
 }
 
+_DOWNLOAD_STATUS_QUERY = {
+    "bytesLoaded":  True,
+    "bytesTotal":   True,
+    "childCount":   True,
+    "enabled":      True,
+    "eta":          True,
+    "finished":     True,
+    "name":         True,
+    "running":      True,
+    "saveTo":       True,
+    "speed":        True,
+    "status":       True,
+}
+
 def response_data(res: requests.Response, context: str, default):
     if res.status_code != 200:
         log(f"{context} returned HTTP {res.status_code}: {res.text}", PREFIX, "debug")
@@ -242,6 +256,49 @@ def jdown_ensure_premium_account() -> bool:
         return False
     return True
 
+def jdown_downloads_get_status() -> list[dict]:
+    """Return all download packages with their state and progress percentage.
+
+    Each entry contains:
+        uuid, name, status, running, finished, percent,
+        bytes_loaded, bytes_total, speed_bps, eta_seconds, save_to
+    """
+    ctx = "downloadsV2/queryPackages"
+    try:
+        res = requests.post(
+            f"{config.get_config('api_base_url')}/{ctx}",
+            params={"": json.dumps(_DOWNLOAD_STATUS_QUERY)},
+            timeout=config.get_config("request_timeout_seconds"),
+        )
+    except requests.RequestException as exc:
+        log(f"Could not query download status: {exc}", PREFIX, "error")
+        return []
+
+    packages = response_data(res, ctx, [])
+    if not isinstance(packages, list):
+        return []
+
+    result = []
+    for pkg in packages:
+        bytes_loaded = pkg.get("bytesLoaded") or 0
+        bytes_total  = pkg.get("bytesTotal")  or 0
+        percent = round(bytes_loaded / bytes_total * 100, 1) if bytes_total > 0 else 0.0
+        result.append({
+            "uuid":        pkg.get("uuid"),
+            "name":        pkg.get("name"),
+            "status":      pkg.get("status"),
+            "running":     pkg.get("running", False),
+            "finished":    pkg.get("finished", False),
+            "percent":     percent,
+            "bytes_loaded": bytes_loaded,
+            "bytes_total":  bytes_total,
+            "speed_bps":   pkg.get("speed") or 0,
+            "eta_seconds": pkg.get("eta") or -1,
+            "save_to":     pkg.get("saveTo"),
+        })
+    return result
+
+
 def jdown_downloads_get_state():
     # returned states: STOPPED_STATE, RUNNING, PAUSE
     ctx = "downloadcontroller/getCurrentState"
@@ -254,6 +311,116 @@ def jdown_downloads_get_state():
         log(f"Could not get downloads state: {exc}", PREFIX, "error")
         return None
     return response_data(res, ctx, None)
+
+
+def jdown_downloads_start() -> bool:
+    ctx = "downloadcontroller/start"
+    try:
+        res = requests.post(
+            f"{config.get_config('api_base_url')}/{ctx}",
+            timeout=config.get_config("request_timeout_seconds"),
+        )
+    except requests.RequestException as exc:
+        log(f"Could not start download controller: {exc}", PREFIX, "error")
+        return False
+    result = response_data(res, ctx, False)
+    log("Download controller started", PREFIX)
+    return bool(result)
+
+
+def jdown_downloads_stop() -> bool:
+    ctx = "downloadcontroller/stop"
+    try:
+        res = requests.post(
+            f"{config.get_config('api_base_url')}/{ctx}",
+            timeout=config.get_config("request_timeout_seconds"),
+        )
+    except requests.RequestException as exc:
+        log(f"Could not stop download controller: {exc}", PREFIX, "error")
+        return False
+    result = response_data(res, ctx, False)
+    log("Download controller stopped", PREFIX)
+    return bool(result)
+
+
+def jdown_package_set_enabled(package_uuid: int, enabled: bool) -> bool:
+    ctx = "downloadsV2/setEnabled"
+    try:
+        res = requests.post(
+            f"{config.get_config('api_base_url')}/{ctx}",
+            params=[
+                ("", json.dumps(enabled)),
+                ("", json.dumps([])),
+                ("", json.dumps([package_uuid])),
+            ],
+            timeout=config.get_config("request_timeout_seconds"),
+        )
+    except requests.RequestException as exc:
+        log(f"Could not set enabled={enabled} for package {package_uuid}: {exc}", PREFIX, "error")
+        return False
+    return res.status_code == 200
+
+
+def jdown_package_stop(package_uuid: int) -> bool:
+    """Abort the active download for a package without leaving it disabled."""
+    log(f"Stopping package {package_uuid}", PREFIX, "debug")
+    jdown_package_set_enabled(package_uuid, False)
+    jdown_package_set_enabled(package_uuid, True)
+    return True
+
+
+def jdown_package_is_finished(package_uuid: int, status: str = None) -> bool:
+    """Return True if the package and all its links are finished.
+
+    Uses the same status-string checks as the download watcher:
+    a status of 'Finished' or one starting with 'Extraction OK' counts as done.
+    """
+    def _status_ok(s: str) -> bool:
+        return bool(s) and (s == "Finished" or s.startswith("Extraction OK"))
+
+    if not _status_ok(status):
+        return False
+    links = jdown_downloads_get_package_links([package_uuid])
+    if not links:
+        return False
+    return all(_status_ok(link.get("status") or "") for link in links)
+
+
+def jdown_package_force_start(package_uuid: int) -> bool:
+    log(f"Force starting package {package_uuid}", PREFIX, "debug")
+    jdown_package_set_enabled(package_uuid, True)
+    ctx = "downloadsV2/forceDownload"
+    try:
+        res = requests.post(
+            f"{config.get_config('api_base_url')}/{ctx}",
+            params={
+                "linkIds":    json.dumps([]),
+                "packageIds": json.dumps([package_uuid]),
+            },
+            timeout=config.get_config("request_timeout_seconds"),
+        )
+    except requests.RequestException as exc:
+        log(f"Could not force start package {package_uuid}: {exc}", PREFIX, "error")
+        return False
+    return bool(response_data(res, ctx, False))
+
+
+def jdown_package_remove(package_uuid: int) -> bool:
+    log(f"Removing package {package_uuid}", PREFIX, "debug")
+    ctx = "downloadsV2/removeLinks"
+    try:
+        res = requests.post(
+            f"{config.get_config('api_base_url')}/{ctx}",
+            params={
+                "linkIds":    json.dumps([]),
+                "packageIds": json.dumps([package_uuid]),
+            },
+            timeout=config.get_config("request_timeout_seconds"),
+        )
+    except requests.RequestException as exc:
+        log(f"Could not remove package {package_uuid}: {exc}", PREFIX, "error")
+        return False
+    return res.status_code == 200
 
 
 def jdown_downloads_get_packages(name: str = None):

@@ -89,10 +89,31 @@ def api_scan():
         except ValueError:
             pass
 
+    # Determine which top-level subdirs are still being downloaded (not finished)
+    active_download_dirs: set[Path] = set()
+    try:
+        from core.jdownloader import jdown_downloads_get_status, jdown_package_is_finished
+        for pkg in jdown_downloads_get_status():
+            if not pkg.get("save_to"):
+                continue
+            if jdown_package_is_finished(pkg["uuid"], pkg.get("status")):
+                continue  # Finished — allow it to appear in scan
+            save_path = Path(pkg["save_to"])
+            try:
+                rel = save_path.relative_to(scan_dir)
+                active_download_dirs.add(scan_dir / rel.parts[0])
+            except ValueError:
+                # save_to is outside scan_dir — match directly
+                active_download_dirs.add(save_path)
+    except Exception:
+        pass
+
     results = []
     for entry in sorted(scan_dir.iterdir()):
         if not entry.is_dir() or entry in skip_tops:
             continue
+        if entry in active_download_dirs:
+            continue  # Still downloading — exclude from scan
         try:
             info = _serialize_guessit(dict(_guessit(entry.name)))
         except Exception:
@@ -106,6 +127,71 @@ def api_scan():
         })
 
     return jsonify(results)
+
+
+@app.route("/api/scan/folder", methods=["DELETE"])
+def api_scan_folder_delete():
+    data = request.get_json(silent=True) or {}
+    target = data.get("path", "").strip()
+    if not target:
+        return jsonify({"error": "No path provided"}), 400
+
+    scan_dir = Path(config.get_config("scan_path")).resolve()
+    target_path = Path(target).resolve()
+
+    # Safety: must be a direct child of scan_dir (no traversal, not the root itself)
+    try:
+        rel = target_path.relative_to(scan_dir)
+    except ValueError:
+        return jsonify({"error": "Path is outside scan directory"}), 403
+    if len(rel.parts) != 1:
+        return jsonify({"error": "Only top-level scan folders may be deleted"}), 403
+    if not target_path.is_dir():
+        return jsonify({"error": "Path is not a directory"}), 400
+
+    import shutil
+    shutil.rmtree(target_path)
+    log(f"Deleted folder '{target_path.name}'", PREFIX)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/downloads")
+def api_downloads():
+    from core.jdownloader import jdown_downloads_get_status, jdown_downloads_get_state
+    return jsonify({
+        "controller_state": jdown_downloads_get_state(),
+        "packages": jdown_downloads_get_status(),
+    })
+
+
+@app.route("/api/downloads/start", methods=["POST"])
+def api_downloads_start():
+    from core.jdownloader import jdown_downloads_start
+    return jsonify({"ok": jdown_downloads_start()})
+
+
+@app.route("/api/downloads/stop", methods=["POST"])
+def api_downloads_stop():
+    from core.jdownloader import jdown_downloads_stop
+    return jsonify({"ok": jdown_downloads_stop()})
+
+
+@app.route("/api/downloads/<int:pkg_uuid>/start", methods=["POST"])
+def api_pkg_start(pkg_uuid: int):
+    from core.jdownloader import jdown_package_force_start
+    return jsonify({"ok": jdown_package_force_start(pkg_uuid)})
+
+
+@app.route("/api/downloads/<int:pkg_uuid>/stop", methods=["POST"])
+def api_pkg_stop(pkg_uuid: int):
+    from core.jdownloader import jdown_package_stop
+    return jsonify({"ok": jdown_package_stop(pkg_uuid)})
+
+
+@app.route("/api/downloads/<int:pkg_uuid>", methods=["DELETE"])
+def api_pkg_remove(pkg_uuid: int):
+    from core.jdownloader import jdown_package_remove
+    return jsonify({"ok": jdown_package_remove(pkg_uuid)})
 
 
 @app.route("/api/settings", methods=["GET"])

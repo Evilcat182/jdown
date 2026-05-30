@@ -5,23 +5,10 @@ import threading
 import config
 from pathlib import Path
 
-from core import log, response_data, jdown_wait_ready, jdown_downloads_get_package_links, jdown_downloads_get_packages
+from core import log, response_data, jdown_wait_ready, jdown_downloads_get_packages, jdown_package_is_finished
 from media import organize
 
 PREFIX = "[DownloadWatch]"
-
-
-def _is_finished(status: str) -> bool:
-    if status is None:
-        return False
-    return status == "Finished" or status.startswith("Extraction OK")
-
-
-def _all_links_finished(package_uuid: int) -> bool:
-    links = jdown_downloads_get_package_links([package_uuid])
-    if not links:
-        return False
-    return all(_is_finished(link.get("status") or "") for link in links)
 
 
 def run(enabled: threading.Event):
@@ -42,7 +29,7 @@ def run(enabled: threading.Event):
             if uid in reported_uuids:
                 continue
 
-            if _is_finished(status) and _all_links_finished(uid):
+            if jdown_package_is_finished(uid, status):
                 reported_uuids.add(uid)
                 save_to = pkg.get("saveTo")
                 if save_to and Path(save_to).exists():
