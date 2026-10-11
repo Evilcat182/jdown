@@ -6,6 +6,7 @@ import config
 from pathlib import Path
 from guessit import guessit
 from core import log
+from . import progress
 from .plex import plex_scan_library
 
 PREFIX = "[Organizer]"
@@ -71,16 +72,37 @@ def _files_differ(src: Path, dst: Path) -> bool:
     return ss.st_size != ds.st_size or ss.st_mtime > ds.st_mtime
 
 
-def _safe_copy(src: Path, dst: Path) -> bool:
+_COPY_CHUNK_SIZE = 1024 * 1024  # 1 MiB
+
+
+def _copy_with_progress(src: Path, dst: Path, progress_cb):
+    """Copy file contents in chunks, reporting bytes written via progress_cb."""
+    with open(src, "rb") as fsrc, open(dst, "wb") as fdst:
+        while True:
+            chunk = fsrc.read(_COPY_CHUNK_SIZE)
+            if not chunk:
+                break
+            fdst.write(chunk)
+            progress_cb(len(chunk))
+    shutil.copystat(str(src), str(dst))
+
+
+def _safe_copy(src: Path, dst: Path, progress_cb=None) -> bool:
     dst.parent.mkdir(parents=True, exist_ok=True)
     if dst.exists():
         if not _files_differ(src, dst):
             log(f"'{dst.name}' already exists, skipping", PREFIX, "warning")
+            if progress_cb:
+                # Count skipped bytes toward the total so overall progress stays consistent
+                progress_cb(src.stat().st_size)
             return False
         label = " (updated)"
     else:
         label = ""
-    shutil.copy2(str(src), str(dst))
+    if progress_cb:
+        _copy_with_progress(src, dst, progress_cb)
+    else:
+        shutil.copy2(str(src), str(dst))
     log(f"'{src.name}' -> '{dst}'{label}", PREFIX)
     return True
 
@@ -95,7 +117,7 @@ def _resolve_content_root(src: Path) -> Path:
     return src
 
 
-def _copy_extras(src: Path, out_dir: Path, excluded: set = None):
+def _copy_extras(src: Path, out_dir: Path, excluded: set = None, progress_cb=None):
     """Copy all non-video files that are not excluded, preserving relative paths."""
     for f in src.rglob("*"):
         if not f.is_file():
@@ -104,7 +126,7 @@ def _copy_extras(src: Path, out_dir: Path, excluded: set = None):
             continue
         if excluded and _is_excluded(f, excluded):
             continue
-        _safe_copy(f, out_dir / f.relative_to(src))
+        _safe_copy(f, out_dir / f.relative_to(src), progress_cb)
 
 
 def _check_mandatory(info: dict, mandatory: list) -> list[str]:
@@ -123,7 +145,7 @@ def _render_template(template: str, info: dict, sep: str = ".") -> str:
     return sep.join(parts)
 
 
-def _organize_movie(src: Path, dest: Path, info: dict, videos: list[Path], excluded: set = None, error_path: Path = None) -> tuple[bool, list[str]]:
+def _organize_movie(src: Path, dest: Path, info: dict, videos: list[Path], excluded: set = None, error_path: Path = None, progress_cb=None) -> tuple[bool, list[str]]:
     ep = error_path or src
 
     if len(videos) > 1:
@@ -150,13 +172,13 @@ def _organize_movie(src: Path, dest: Path, info: dict, videos: list[Path], exclu
     moved = False
     for video in videos:
         filename = _render_template(config.get_config("movie_settings")["file_template_name"], info, sep=".") + video.suffix.lower()
-        if _safe_copy(video, out_dir / filename):
+        if _safe_copy(video, out_dir / filename, progress_cb):
             moved = True
-    _copy_extras(src, out_dir, excluded)
+    _copy_extras(src, out_dir, excluded, progress_cb)
     return moved, []
 
 
-def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excluded: set = None, error_path: Path = None) -> tuple[bool, list[str]]:
+def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excluded: set = None, error_path: Path = None, progress_cb=None) -> tuple[bool, list[str]]:
     ep = error_path or src
 
     title_missing = _check_mandatory(info, ["title", "dotted_title"])
@@ -198,7 +220,7 @@ def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excl
         else:
             episode_dir = season_dir
         filename = _render_template(config.get_config("series_settings")["file_template_name"], merged, sep=".") + video.suffix.lower()
-        if _safe_copy(video, episode_dir / filename):
+        if _safe_copy(video, episode_dir / filename, progress_cb):
             moved = True
         dir_mapping[video.parent] = episode_dir
 
@@ -211,7 +233,7 @@ def _organize_series(src: Path, dest: Path, info: dict, videos: list[Path], excl
         mapped_src = next((p for p in [f.parent, *f.parent.parents] if p in dir_mapping and p != src), None)
         mapped_dir = dir_mapping[mapped_src] if mapped_src else None
         rel = f.relative_to(mapped_src) if mapped_src else f.relative_to(src)
-        _safe_copy(f, (mapped_dir or out_base) / rel)
+        _safe_copy(f, (mapped_dir or out_base) / rel, progress_cb)
 
     return moved, []
 
@@ -265,14 +287,28 @@ def organize(src: Path, info_override: dict = None) -> list[str]:
         log(f"No video files found in '{src.name}', skipping", PREFIX, "warning")
         return ["No video files found"]
 
+    total_bytes = sum(
+        f.stat().st_size
+        for f in content_root.rglob("*")
+        if f.is_file() and not _is_excluded(f, excluded)
+    )
+    job_key = str(src)
+    progress.start_job(job_key, src.name, total_bytes)
+
+    def progress_cb(n: int):
+        progress.update_job(job_key, n)
+
     log(f"Copying files from '{src.name}'...", PREFIX)
-    if media_type == "movie":
-        moved, errors = _organize_movie(content_root, Path(config.get_config("movie_destination")), info, videos, excluded, error_path=src)
-    elif media_type == "episode":
-        moved, errors = _organize_series(content_root, Path(config.get_config("series_destination")), info, videos, excluded, error_path=src)
-    else:
-        log(f"'{src.name}' has unknown media type '{media_type}', skipping", PREFIX, "warning")
-        return [f"Unknown media type '{media_type}'"]
+    try:
+        if media_type == "movie":
+            moved, errors = _organize_movie(content_root, Path(config.get_config("movie_destination")), info, videos, excluded, error_path=src, progress_cb=progress_cb)
+        elif media_type == "episode":
+            moved, errors = _organize_series(content_root, Path(config.get_config("series_destination")), info, videos, excluded, error_path=src, progress_cb=progress_cb)
+        else:
+            log(f"'{src.name}' has unknown media type '{media_type}', skipping", PREFIX, "warning")
+            return [f"Unknown media type '{media_type}'"]
+    finally:
+        progress.finish_job(job_key)
 
     if errors:
         return errors

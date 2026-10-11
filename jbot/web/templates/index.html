@@ -267,21 +267,15 @@
     }
 
     .scan-item-progress {
-      height: 3px;
-      background: var(--surface-2);
-      overflow: hidden;
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 6px;
     }
-    .scan-item-progress-bar {
-      height: 100%;
-      width: 40%;
-      background: var(--accent);
-      border-radius: 2px;
-      animation: org-slide 1.2s ease-in-out infinite;
+    .scan-item-progress-meta {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 11px; color: var(--text-3);
     }
-    @keyframes org-slide {
-      0%   { transform: translateX(-100%); }
-      100% { transform: translateX(350%); }
-    }
+    .scan-item-progress-meta .pct { font-weight: 600; color: var(--text-2); min-width: 42px; }
 
     .scan-item-errors {
       padding: 8px 16px;
@@ -431,6 +425,12 @@
         </div>
       </div>
       <div id="dl-list" class="dl-list"></div>
+    </section>
+
+    <!-- Copy activity (visible whenever a copy job is running, survives reload) -->
+    <section id="copy-section" style="display:none">
+      <div class="section-label">Copying</div>
+      <div id="copy-list" class="dl-list"></div>
     </section>
 
     <!-- Scan -->
@@ -606,14 +606,11 @@
       const btn  = card.querySelector('.btn-org');
       btn.textContent = 'Running…';
       btn.disabled = true;
+      _orgPending.add(i);
       // Clear previous errors
       card.querySelectorAll('.scan-item-errors').forEach(el => el.remove());
       card.style.borderColor = '';
-      // Show progress bar
-      const prog = document.createElement('div');
-      prog.className = 'scan-item-progress';
-      prog.innerHTML = '<div class="scan-item-progress-bar"></div>';
-      card.querySelector('.scan-item-footer').before(prog);
+      // Progress bar is created/updated by the global copy-progress poller
       fetch('/api/organize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -635,9 +632,11 @@
         })
         .catch(() => {})
         .finally(() => {
-          prog.remove();
+          _orgPending.delete(i);
           btn.textContent = 'Organize';
           btn.disabled = false;
+          // Remove the progress bar once the server-side job is gone
+          if (!_activeJobs[item.path]) card.querySelector('.scan-item-progress')?.remove();
         });
     }
 
@@ -833,6 +832,88 @@
         .catch(() => {})
         .finally(() => { btn.disabled = false; });
     }
+
+    // ── Copy progress (poll-driven, survives page reload) ────────────────────
+    let _activeJobs = {};        // source path -> job
+    const _orgPending = new Set(); // scan item indexes with an in-flight organize request
+
+    function ensureItemProgressBar(card) {
+      let prog = card.querySelector('.scan-item-progress');
+      if (!prog) {
+        prog = document.createElement('div');
+        prog.className = 'scan-item-progress';
+        prog.innerHTML = `
+          <div class="dl-progress-track"><div class="dl-progress-fill" style="width:0%"></div></div>
+          <div class="scan-item-progress-meta">
+            <span class="pct">0%</span>
+            <span class="bytes"></span>
+          </div>`;
+        card.querySelector('.scan-item-footer').before(prog);
+      }
+      return prog;
+    }
+
+    function renderCopySection() {
+      const sec  = document.getElementById('copy-section');
+      const list = document.getElementById('copy-list');
+      const jobs = Object.values(_activeJobs);
+      if (!jobs.length) { sec.style.display = 'none'; list.innerHTML = ''; return; }
+      sec.style.display = '';
+      list.innerHTML = jobs.map(j => `
+        <div class="dl-item">
+          <div class="dl-item-top">
+            <span class="dl-item-name" title="${escHtml(j.name)}">${escHtml(j.name)}</span>
+            <span class="dl-item-status running">Copying</span>
+          </div>
+          <div class="dl-progress-track">
+            <div class="dl-progress-fill" style="width:${j.percent}%"></div>
+          </div>
+          <div class="dl-item-meta">
+            <span class="dl-meta-pct">${j.percent}%</span>
+            <span>${fmtBytes(j.copied_bytes)} / ${fmtBytes(j.total_bytes)}</span>
+          </div>
+        </div>`).join('');
+    }
+
+    function syncScanItemProgress() {
+      _scanItems.forEach((item, i) => {
+        if (!item) return;
+        const card = document.getElementById('scan-item-' + i);
+        if (!card) return;
+        const btn = card.querySelector('.btn-org');
+        const job = _activeJobs[item.path];
+        if (job) {
+          const el = ensureItemProgressBar(card);
+          el.querySelector('.dl-progress-fill').style.width = job.percent + '%';
+          el.querySelector('.pct').textContent = job.percent + '%';
+          el.querySelector('.bytes').textContent = fmtBytes(job.copied_bytes) + ' / ' + fmtBytes(job.total_bytes);
+          btn.textContent = 'Running…';
+          btn.disabled = true;
+        } else if (!_orgPending.has(i)) {
+          // Job finished and no local request is still in flight → reset card
+          card.querySelector('.scan-item-progress')?.remove();
+          if (!card.classList.contains('organized')) {
+            btn.textContent = 'Organize';
+            btn.disabled = false;
+          }
+        }
+      });
+    }
+
+    function pollCopyProgress() {
+      fetch('/api/organize/progress')
+        .then(r => r.json())
+        .then(data => {
+          _activeJobs = {};
+          (data.jobs || []).forEach(j => { _activeJobs[j.path] = j; });
+          renderCopySection();
+          syncScanItemProgress();
+        })
+        .catch(() => {});
+    }
+
+    pollCopyProgress();
+    setInterval(pollCopyProgress, 1000);
 
     pollDownloads();
     setInterval(pollDownloads, 4000);

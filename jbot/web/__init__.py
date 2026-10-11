@@ -6,6 +6,7 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template, request
 import config
 from core import log, get_logs
+from media import progress
 from media.organizer import organize, _guessit
 
 
@@ -225,3 +226,22 @@ def api_organize():
     info_override = data.get("info") or None
     errors = organize(Path(path), info_override=info_override)
     return jsonify({"errors": errors or []})
+
+
+@app.route("/api/organize/progress")
+def api_organize_progress():
+    path = request.args.get("path", "").strip()
+    if path:
+        job = progress.get_job(path)
+        if not job:
+            return jsonify({"active": False})
+        total = job["total_bytes"]
+        percent = round(min(100.0, job["copied_bytes"] / total * 100), 1) if total > 0 else 100.0
+        return jsonify({"active": True, "percent": percent, **job})
+    # No path: return all active copy jobs (used by the UI to survive reloads)
+    jobs = []
+    for p, job in progress.get_all_jobs().items():
+        total = job["total_bytes"]
+        percent = round(min(100.0, job["copied_bytes"] / total * 100), 1) if total > 0 else 100.0
+        jobs.append({"path": p, "percent": percent, **job})
+    return jsonify({"active": bool(jobs), "jobs": jobs})
