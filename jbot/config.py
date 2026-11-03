@@ -75,7 +75,7 @@ _SCHEMA = {
     "wait_timeout_seconds":     {"default": 120,                   "env": "WAIT_TIMEOUT_SECONDS",     "type": int, "ui": False},
 }
 
-_EVENTS: dict[str: threading.Event] = {}
+_EVENTS: dict[str, threading.Event] = {}
 for key, val in _SCHEMA.items():
     if val.get("event"):
         _EVENTS[key] = threading.Event()
@@ -110,10 +110,23 @@ def _apply_to_event(key: str, value: bool):
 def _convert_str_to_bool(string:str) -> bool:
     return string.lower().strip() in ["1","true","yes"]
 
+def _convert_str_to_list(string: str) -> list:
+    """Accept a JSON array or a comma-separated string."""
+    string = string.strip()
+    if string.startswith("["):
+        return json.loads(string)
+    return [item.strip() for item in string.split(",") if item.strip()]
+
 def _convert_type(key: str, value) -> object:
     wanted_type = _SCHEMA.get(key).get("type")
     if wanted_type is bool:
         return _convert_str_to_bool(str(value))
+    if wanted_type is int:
+        return int(value)
+    if wanted_type is list and isinstance(value, str):
+        return _convert_str_to_list(value)
+    if wanted_type is dict and isinstance(value, str):
+        return json.loads(value)
     return value
         
 
@@ -125,7 +138,11 @@ for key, val in _SCHEMA.items():
 file_data = _load_file()
 for key in _SCHEMA.keys():
     if key in file_data:
-        newval = _convert_type(key,file_data.get(key))
+        try:
+            newval = _convert_type(key,file_data.get(key))
+        except (ValueError, TypeError) as exc:
+            log(f"Ignoring invalid file value for '{key}': {exc}", _PREFIX, "error")
+            continue
         if _store.get(key) != newval:
             log(f"Config '{key}' overwritten by file to '{newval}'",_PREFIX, "debug")
             _store[key] = newval
@@ -135,7 +152,11 @@ for key, val in _SCHEMA.items():
     if val.get("env") is not None:
         env = os.getenv(val.get("env"))
         if env is not None:
-            newval = _convert_type(key,env)
+            try:
+                newval = _convert_type(key,env)
+            except (ValueError, TypeError) as exc:
+                log(f"Ignoring invalid env var {val.get('env')}='{env}': {exc}", _PREFIX, "error")
+                continue
             if _store.get(key) != newval:
                 log(f"Config '{key}' overwritten by env var to '{newval}'",_PREFIX, "debug")
                 _store[key] = newval

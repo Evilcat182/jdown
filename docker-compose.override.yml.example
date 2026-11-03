@@ -1,0 +1,10 @@
+# Development overrides — copy to docker-compose.override.yml to use.
+# Compose merges that file on top of docker-compose.yml automatically.
+#
+# Mounts the jbot source into the container, so code changes only need
+# a restart (docker compose restart jbot) instead of a rebuild.
+
+services:
+  jbot:
+    volumes:
+      - ./jbot:/app:Z,rw

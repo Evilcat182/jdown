@@ -14,7 +14,8 @@ PREFIX = "[Organizer]"
 
 def _guessit(name: str):
     result = guessit(name)
-    result["dotted_title"] = result["title"].replace(" ", ".")
+    if result.get("title"):
+        result["dotted_title"] = result["title"].replace(" ", ".")
     if result.get("video_codec"):
         result["video_codec"] = result["video_codec"].replace(".", "")
     if result.get("screen_size"):
@@ -30,8 +31,10 @@ def _guessit(name: str):
     return result
 
 
-def _get_excluded(path: str, settings: list = config.get_config("organizer_excludes")) -> set:
+def _get_excluded(path: str, settings: list | None = None) -> set:
     """Return a set of paths to exclude from copying based on cleanup settings."""
+    if settings is None:
+        settings = config.get_config("organizer_excludes")
     excluded = set()
     root = Path(path)
     for rule in settings:

@@ -4,7 +4,6 @@ import threading
 import config
 from pathlib import Path
 from flask import Flask, jsonify, render_template, request
-import config
 from core import log, get_logs
 from media import progress
 from media.organizer import organize, _guessit
@@ -79,8 +78,8 @@ def api_scan():
 
     # Determine which top-level subdirs to skip (e.g. the organised destinations)
     skip_tops: set[Path] = set()
-    for dest_env in ("MOVIE_DESTINATION", "SERIES_DESTINATION"):
-        dest = os.getenv(dest_env, "")
+    for dest_key in ("movie_destination", "series_destination"):
+        dest = config.get_config(dest_key)
         if not dest:
             continue
         dest_path = Path(dest)
@@ -223,8 +222,19 @@ def api_organize():
     path = (data.get("path") or "").strip()
     if not path:
         return jsonify({"error": "path is required"}), 400
+
+    # Safety: must be a direct child of scan_dir (organize may delete the source)
+    scan_dir = Path(config.get_config("scan_path")).resolve()
+    target_path = Path(path).resolve()
+    try:
+        rel = target_path.relative_to(scan_dir)
+    except ValueError:
+        return jsonify({"error": "Path is outside scan directory"}), 403
+    if len(rel.parts) != 1:
+        return jsonify({"error": "Only top-level scan folders may be organized"}), 403
+
     info_override = data.get("info") or None
-    errors = organize(Path(path), info_override=info_override)
+    errors = organize(target_path, info_override=info_override)
     return jsonify({"errors": errors or []})
 
 

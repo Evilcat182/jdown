@@ -1,8 +1,7 @@
 services:
 
   gluetun:
-    image: qmcgaw/gluetun:latest
-    pull_policy: always
+    image: qmcgaw/gluetun:v3.41.3
     container_name: gluetun
     cap_add:
       - NET_ADMIN
@@ -29,14 +28,12 @@ services:
     ports:
       - 5800:5800   # Jdownloader WebUI 
       - 5801:5801   # Firefox WebUI
-      - 3128:3128   # Jdownloader API Port (jbot uses this)
       - 8888:8888   # HTTP proxy for mobile browsers
       - 9666:9666   # JDownloader Click & Load
     restart: unless-stopped
 
   firefox:
-    image: jlesage/firefox:latest
-    pull_policy: always
+    image: jlesage/firefox:v26.09.1
     container_name: firefox
     network_mode: service:gluetun
     depends_on:
@@ -57,8 +54,7 @@ services:
     restart: unless-stopped
 
   jdownloader:
-    image: jlesage/jdownloader-2:latest
-    pull_policy: always
+    image: jlesage/jdownloader-2:v26.09.1
     container_name: jdownloader
     network_mode: service:gluetun
     depends_on:
@@ -94,7 +90,7 @@ services:
     stop_signal: SIGINT
     depends_on:
       jdownloader:
-        condition: service_healthy
+        condition: service_started   # startup.py waits for the JD API itself
     ports:
       - 8080:8080
     environment:
@@ -107,8 +103,9 @@ services:
       - PREMIUM_ACCOUNT_PASSWORD=${PREMIUM_ACCOUNT_PASSWORD}
       - PLEX_API_ROOT=${PLEX_API_ROOT}
       - PLEX_TOKEN=${PLEX_TOKEN}
+      - PLEX_MOVIE_LIB_NAME=${PLEX_MOVIE_LIB_NAME}
+      - PLEX_SHOW_LIB_NAME=${PLEX_SHOW_LIB_NAME}
     volumes:
-      - ./jbot:/app:Z,rw
       - jdown_config_jbot:/config:Z,rw
       - ${DOWNLOADS_PATH:-jdown_downloads}:/output:z,rw
       - ${MOVIE_DESTINATION:-jdown_movies}:/data/movies:z,rw

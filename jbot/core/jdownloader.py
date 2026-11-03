@@ -59,7 +59,9 @@ def jdown_is_ready() -> bool:
     return res.status_code == 200
 
 
-def jdown_wait_ready(timeout_seconds: int = config.get_config("wait_timeout_seconds")) -> bool:
+def jdown_wait_ready(timeout_seconds: int | None = None) -> bool:
+    if timeout_seconds is None:
+        timeout_seconds = config.get_config("wait_timeout_seconds")
     start = time.time()
     while not jdown_is_ready():
         if time.time() - start > timeout_seconds:
@@ -69,7 +71,9 @@ def jdown_wait_ready(timeout_seconds: int = config.get_config("wait_timeout_seco
     return True
 
 
-def jdown_wait_not_ready(timeout_seconds: int = config.get_config("wait_timeout_seconds")) -> bool:
+def jdown_wait_not_ready(timeout_seconds: int | None = None) -> bool:
+    if timeout_seconds is None:
+        timeout_seconds = config.get_config("wait_timeout_seconds")
     start = time.time()
     while jdown_is_ready():
         if time.time() - start > timeout_seconds:
@@ -92,7 +96,9 @@ def jdown_list_dialogs() -> list:
     return data if isinstance(data, list) else []
 
 
-def jdown_wait_for_dialog(timeout_seconds: int = config.get_config("wait_timeout_seconds")) -> list:
+def jdown_wait_for_dialog(timeout_seconds: int | None = None) -> list:
+    if timeout_seconds is None:
+        timeout_seconds = config.get_config("wait_timeout_seconds")
     log(f"Waiting for install dialog (timeout={timeout_seconds}s)", PREFIX, "debug")
     start = time.time()
     while True:

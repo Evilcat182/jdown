@@ -1,8 +1,7 @@
 import time
 import threading
-import config
 
-from core import log, jdown_list_dialogs, jdown_get_dialog, jdown_get_dialog_type_info, jdown_answer_dialog
+from core import log, jdown_list_dialogs, jdown_get_dialog, jdown_answer_dialog
 
 PREFIX = "[DialogHandler]"
 POLL_INTERVAL = 2  # seconds between polls

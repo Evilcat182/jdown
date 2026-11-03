@@ -37,9 +37,8 @@ threading.Thread(
     name="watcher-dialogs",
 ).start()
 
+# Always use waitress: Flask's debug server exposes the Werkzeug debugger,
+# which allows remote code execution. DEBUG only raises log verbosity.
 log("Starting web UI on port 8080...")
-if config.get_config("debug"):
-    app.run(host="0.0.0.0", port=8080, debug=True)
-else:
-    from waitress import serve
-    serve(app, host="0.0.0.0", port=8080)
+from waitress import serve
+serve(app, host="0.0.0.0", port=8080)

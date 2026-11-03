@@ -181,3 +181,19 @@ To use the proxy only in Firefox without changing system settings, configure it 
 
 > **Note:** `network.proxy.allow_hijacking_localhost` must be `true` to allow Click & Load to work —  
 > Firefox blocks proxy forwarding of `127.0.0.1` requests by default, regardless of other proxy settings.
+
+## 7. Development
+
+By default jbot runs the code baked into its image, so after changing anything under `jbot/` you need to rebuild:
+
+```bash
+docker compose up -d --build jbot
+```
+
+For faster iteration, mount the source into the container instead:
+
+```bash
+cp docker-compose.override.yml.example docker-compose.override.yml
+```
+
+Compose automatically merges `docker-compose.override.yml` on top of `docker-compose.yml`, so code changes then only need `docker compose restart jbot`. The override file is gitignored. To run without it (e.g. to test the production setup), name the file explicitly: `docker compose -f docker-compose.yml up -d`.
