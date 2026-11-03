@@ -154,7 +154,7 @@ sudo podman run --rm --volumes-from gluetun qmcgaw/gluetun:v3.41.3 update -endus
 sudo podman restart gluetun && sudo podman restart jdownloader firefox jbot
 ```
 
-`AUTH_FAILED` in the gluetun log means the server rejects your service credentials. That's on NordVPN's side, and jbot can't fix it. If it happens for every server in a country, pick a different country.
+`AUTH_FAILED` in the gluetun log right after many switches in a row means NordVPN is temporarily throttling logins for your account. Wait about 15 minutes without switching, and it works again.
 
 ## 6. Browsing through VPN
 
