@@ -44,4 +44,15 @@ if not jdown_config_set(
     log("Failed to set IfFileExistsAction", type="error")
     sys.exit(1)
 
+# jbot starts the downloads itself once the VPN is connected (watchers/vpn.py),
+# JDownloader's own autostart would start them before that
+log("Setting config AutoStartDownloadOption to 'NEVER'")
+if not jdown_config_set(
+    "org.jdownloader.settings.GeneralSettings",
+    "null",  # core settings have no extension storage
+    "AutoStartDownloadOption",
+    "NEVER"
+):
+    log("Failed to set AutoStartDownloadOption", type="warning")
+
 log("startup.py finished successfully", type="debug")

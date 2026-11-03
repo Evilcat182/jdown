@@ -145,6 +145,8 @@ The choice is saved in jbot's config and re-applied whenever gluetun runs with s
 
 Before switching, jbot stops running (or paused) downloads, because they would lose their connections when the tunnel drops. Once the new tunnel is up, jbot restores the previous state. If downloads were stopped, they stay stopped. If no tunnel comes up at all, the state is saved, and jbot restarts the downloads as soon as the VPN is connected again. A manual "Stop" in the web UI cancels that restart. Reconnects that jbot triggers itself (re-applying the saved server, a stuck tunnel) behave the same way.
 
+When jbot starts, it first stops the downloads, re-applies the saved server if needed, and then **always** starts the downloads once the VPN is connected. JDownloader's own autostart is therefore set to `NEVER` on startup, so it can't start downloads before the VPN is up.
+
 A switch only counts once the new tunnel is up. If a server doesn't connect within 20 s, jbot has gluetun try another server in that country. After 3 failed servers it switches back to the previous one and doesn't save the new choice. If the VPN drops at runtime and stays down for 2 minutes, jbot reconnects, and gluetun then picks a different server in the same country.
 
 #### Switching often fails / `TLS key negotiation failed` / `ENETUNREACH`

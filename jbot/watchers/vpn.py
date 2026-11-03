@@ -1,19 +1,25 @@
 import time
 import config
 from core import (
-    log, gluetun_is_configured, gluetun_get_server_selection, gluetun_set_server_selection,
+    log, gluetun_is_configured, gluetun_get_server_selection,
     gluetun_get_status, gluetun_get_connection, gluetun_restart_vpn, gluetun_wait_connected,
-    jdown_downloads_suspend, jdown_downloads_resume,
+    jdown_downloads_start, jdown_downloads_suspend, jdown_downloads_resume,
 )
-from core.gluetun import switch_lock
+from core.gluetun import switch_lock, CONNECT_TIMEOUT, CONNECT_ATTEMPTS
+from core.vpn_switch import switch_server, remember_downloads
 
 PREFIX = "[VPN]"
 POLL_INTERVAL = 30   # seconds between checks
 STUCK_AFTER = 120    # reconnect if gluetun has no tunnel for this long
+GLUETUN_STARTUP_TIMEOUT = 120  # seconds to wait for gluetun's API when jbot starts
 
 
 def _matches(current: list[str], wanted: list[str]) -> bool:
     return sorted(v.casefold() for v in current) == sorted(v.casefold() for v in wanted)
+
+
+def _is_saved_selection(current: dict, country: str, city: str) -> bool:
+    return _matches(current["countries"], [country]) and _matches(current["cities"], [city] if city else [])
 
 
 def enforce_selection(last_error: str | None = None) -> str | None:
@@ -29,30 +35,19 @@ def enforce_selection(last_error: str | None = None) -> str | None:
     if current is None:
         return last_error  # gluetun not reachable (yet), try again next round
 
-    if _matches(current["countries"], [country]) and _matches(current["cities"], [city] if city else []):
+    if _is_saved_selection(current, country, city):
         return None
 
     target = f"{country}/{city}" if city else country
-    downloads_state = jdown_downloads_suspend()
-    ok, message = gluetun_set_server_selection(country, city)
-    if ok:
-        log(f"Re-applied saved VPN server '{target}'", PREFIX)
-        if gluetun_wait_connected():
-            jdown_downloads_resume(downloads_state)
-        else:
-            _remember_downloads(downloads_state)
+    log(f"Re-applying saved VPN server '{target}'", PREFIX)
+    result = switch_server(country, city)
+    if result["ok"]:
         return None
-    jdown_downloads_resume(downloads_state)
+    message = result["error"]
     error = f"Could not apply saved VPN server '{target}': {message}"
     if error != last_error:
         log(error, PREFIX, "error")
     return error
-
-
-def _remember_downloads(state: str | None):
-    """Keep a stopped downloads state until check_tunnel() sees a tunnel again."""
-    if state:
-        config.patch_config({"vpn_resume_downloads": state})
 
 
 def check_tunnel(down_since: float | None) -> float | None:
@@ -77,16 +72,54 @@ def check_tunnel(down_since: float | None) -> float | None:
     if now - down_since < STUCK_AFTER:
         return down_since
     log(f"No VPN connection for {int(now - down_since)}s, reconnecting to another server", PREFIX, "warning")
-    _remember_downloads(jdown_downloads_suspend())
+    remember_downloads(jdown_downloads_suspend())
     gluetun_restart_vpn()
     return now
+
+
+def startup():
+    """On jbot start: stop downloads, put gluetun on the saved server, and once
+    a tunnel is up always start the downloads."""
+    config.patch_config({"vpn_resume_downloads": ""})
+    jdown_downloads_suspend()
+
+    current = None
+    deadline = time.monotonic() + GLUETUN_STARTUP_TIMEOUT
+    while time.monotonic() < deadline:
+        current = gluetun_get_server_selection()
+        if current is not None:
+            break
+        time.sleep(2)
+    if current is None:
+        log(f"Gluetun not reachable after {GLUETUN_STARTUP_TIMEOUT}s", PREFIX, "error")
+        remember_downloads("RUNNING")
+        return
+
+    country = config.get_config("vpn_country")
+    city = config.get_config("vpn_city")
+    if country and not _is_saved_selection(current, country, city):
+        log(f"Re-applying saved VPN server '{f'{country}/{city}' if city else country}'", PREFIX)
+        switch_server(country, city, resume="RUNNING")  # remembers RUNNING if it fails
+        return
+
+    if gluetun_wait_connected(CONNECT_TIMEOUT * CONNECT_ATTEMPTS):
+        log("VPN connected, starting downloads", PREFIX)
+        jdown_downloads_resume("RUNNING")
+    else:
+        remember_downloads("RUNNING")
 
 
 def run():
     if not gluetun_is_configured():
         log("GLUETUN_API_KEY not set, VPN server selection disabled", PREFIX, "warning")
+        jdown_downloads_start()
         return
     log("Starting VPN watcher", PREFIX)
+    with switch_lock:
+        try:
+            startup()
+        except Exception as exc:
+            log(f"Unexpected error during startup: {exc}", PREFIX, "error")
     last_error = None
     down_since = None
     while True:
