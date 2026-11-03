@@ -271,6 +271,18 @@
     }
     .save-status { font-size: 12px; color: var(--text-3); }
 
+    /* ── VPN ───────────────────────────────────────────────────────────────── */
+    select.text-input { cursor: pointer; }
+    .vpn-status { display: flex; align-items: center; gap: 8px; padding-top: 5px; font-size: 12.5px; flex-wrap: wrap; }
+    .vpn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
+    .vpn-dot.running { background: var(--green); }
+    .vpn-dot.stopped { background: var(--red); }
+    .vpn-dot.other   { background: var(--amber); }
+    .vpn-meta { color: var(--text-2); }
+    .vpn-actions { display: flex; align-items: center; gap: 12px; justify-content: flex-end; }
+    .vpn-note { font-size: 11.5px; color: var(--text-3); }
+    .vpn-note.err { color: var(--red); }
+
     @media (max-width: 520px) {
       .settings-row { grid-template-columns: 1fr; }
       .settings-key { padding-top: 0; }
@@ -345,6 +357,44 @@
             <input type="checkbox" id="toggle-dialogs" onchange="toggle('dialogs')">
             <span class="slider"></span>
           </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- VPN -->
+    <section>
+      <div class="section-label">VPN</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Status</div>
+            <div class="settings-hint">Current connection through gluetun</div>
+          </div>
+          <div class="vpn-status">
+            <span class="vpn-dot" id="vpn-dot"></span>
+            <span id="vpn-status-text">Loading…</span>
+            <span class="vpn-meta" id="vpn-ip"></span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">Country</div>
+            <div class="settings-hint">Saved and re-applied after restarts</div>
+          </div>
+          <select class="text-input" id="vpn-country" onchange="fillVpnCities()" disabled></select>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-key">City</div>
+            <div class="settings-hint">Optional, narrows the server choice</div>
+          </div>
+          <select class="text-input" id="vpn-city" disabled></select>
+        </div>
+        <div class="settings-row">
+          <div class="vpn-note" id="vpn-note"></div>
+          <div class="vpn-actions">
+            <button class="btn btn-primary btn-sm" id="btn-vpn-apply" onclick="applyVpn()" disabled>Switch server</button>
+          </div>
         </div>
       </div>
     </section>
@@ -656,7 +706,113 @@
       return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
+    // ── VPN ───────────────────────────────────────────────────────────────────
+    let vpnLocations = {};
+
+    function setVpnNote(text, isErr = false) {
+      const note = document.getElementById('vpn-note');
+      note.textContent = text;
+      note.className = 'vpn-note' + (isErr ? ' err' : '');
+    }
+
+    function renderVpnStatus(data) {
+      const dot  = document.getElementById('vpn-dot');
+      const text = document.getElementById('vpn-status-text');
+      const ip   = document.getElementById('vpn-ip');
+      if (!data.configured) {
+        dot.className = 'vpn-dot'; text.textContent = 'Not configured'; ip.textContent = '';
+        setVpnNote('Set GLUETUN_API_KEY in .env to enable server selection', true);
+        return false;
+      }
+      if (!data.reachable) {
+        dot.className = 'vpn-dot stopped'; text.textContent = 'Gluetun not reachable'; ip.textContent = '';
+        return false;
+      }
+      const status = data.status || 'unknown';
+      dot.className = 'vpn-dot ' + (status === 'running' ? 'running' : status === 'stopped' ? 'stopped' : 'other');
+      text.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      const pub = data.public_ip || {};
+      const where = [pub.city, pub.country].filter(Boolean).join(', ');
+      ip.textContent = pub.public_ip ? `· ${pub.public_ip}${where ? ' (' + where + ')' : ''}` : '';
+      return true;
+    }
+
+    function fillVpnCities(selectedCity = '') {
+      const country = document.getElementById('vpn-country').value;
+      const cities  = vpnLocations[country] || [];
+      const options = ['<option value="">Any city</option>']
+        .concat(cities.map(c => `<option value="${escAttr(c)}">${escAttr(c)}</option>`));
+      if (selectedCity && !cities.includes(selectedCity)) {
+        options.push(`<option value="${escAttr(selectedCity)}">${escAttr(selectedCity)}</option>`);
+      }
+      const sel = document.getElementById('vpn-city');
+      sel.innerHTML = options.join('');
+      sel.value = selectedCity;
+    }
+
+    function loadVpn(fillSelects = true) {
+      return fetch('/api/vpn').then(r => r.json()).then(data => {
+        const ok = renderVpnStatus(data);
+        if (!fillSelects) return;
+
+        const countrySel = document.getElementById('vpn-country');
+        const citySel    = document.getElementById('vpn-city');
+        const applyBtn   = document.getElementById('btn-vpn-apply');
+        [countrySel, citySel, applyBtn].forEach(el => el.disabled = !ok);
+        if (!ok) return;
+
+        // Show the saved choice, else what gluetun currently uses
+        const current = data.current || {};
+        const country = data.selected.country || (current.countries || [])[0] || '';
+        const city    = data.selected.country ? data.selected.city : ((current.cities || [])[0] || '');
+
+        vpnLocations = data.locations || {};
+        const countries = Object.keys(vpnLocations);
+        if (country && !countries.includes(country)) countries.unshift(country);
+        countrySel.innerHTML = countries.map(c => `<option value="${escAttr(c)}">${escAttr(c)}</option>`).join('');
+        countrySel.value = country;
+        fillVpnCities(city);
+
+        if (!data.locations) {
+          setVpnNote('Server list not available yet, gluetun writes it on startup');
+        } else if (!data.selected.country) {
+          setVpnNote('Using the default from docker-compose.yml');
+        } else {
+          setVpnNote('');
+        }
+      }).catch(() => setVpnNote('Failed to load VPN status', true));
+    }
+
+    function applyVpn() {
+      const btn = document.getElementById('btn-vpn-apply');
+      const country = document.getElementById('vpn-country').value;
+      const city    = document.getElementById('vpn-city').value;
+      btn.disabled = true;
+      btn.textContent = 'Switching…';
+      fetch('/api/vpn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ country, city }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            showToast('VPN server switched, reconnecting…', 'ok');
+            setVpnNote('Reconnecting, downloads resume automatically');
+            // Gluetun needs a few seconds to reconnect and look up the new IP
+            setTimeout(() => loadVpn(false).then(() => setVpnNote('')), 8000);
+          } else {
+            showToast('Switch failed', 'err');
+            setVpnNote(data.error || 'Switch failed', true);
+          }
+        })
+        .catch(() => showToast('Switch failed', 'err'))
+        .finally(() => { btn.disabled = false; btn.textContent = 'Switch server'; });
+    }
+
     loadSettings();
+    loadVpn();
+    setInterval(() => loadVpn(false), 15000);
   </script>
 </body>
 </html>

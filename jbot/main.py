@@ -12,7 +12,7 @@ if result.returncode != 0:
 
 # Import after startup so JDownloader is ready
 import config
-from watchers import dialogs, downloads, linkgrabber
+from watchers import dialogs, downloads, linkgrabber, vpn
 from web import app
 
 log("Starting watchers...")
@@ -35,6 +35,12 @@ threading.Thread(
     args=(config.get_event("dialogs"),),
     daemon=True,
     name="watcher-dialogs",
+).start()
+
+threading.Thread(
+    target=vpn.run,
+    daemon=True,
+    name="watcher-vpn",
 ).start()
 
 # Always use waitress: Flask's debug server exposes the Werkzeug debugger,

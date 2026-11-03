@@ -19,6 +19,12 @@ services:
       # ── Built-in HTTP proxy (for mobile device proxy settings) ──────────────
       - HTTPPROXY=on
       - HTTPPROXY_LISTENING_ADDRESS=:8888
+      # ── Server list: refresh daily, stored in the gluetun volume ───────────
+      - UPDATER_PERIOD=24h
+      # ── Control server (port 8000, internal only — used by jbot) ───────────
+      - 'HTTP_CONTROL_SERVER_AUTH_DEFAULT_ROLE={"auth":"apikey","apikey":"${GLUETUN_API_KEY:?set GLUETUN_API_KEY in .env}"}'
+    volumes:
+      - jdown_config_gluetun:/gluetun:z,rw
     healthcheck:
       test: /gluetun-entrypoint healthcheck
       interval: 10s
@@ -105,8 +111,11 @@ services:
       - PLEX_TOKEN=${PLEX_TOKEN}
       - PLEX_MOVIE_LIB_NAME=${PLEX_MOVIE_LIB_NAME}
       - PLEX_SHOW_LIB_NAME=${PLEX_SHOW_LIB_NAME}
+      - GLUETUN_API_URL=http://gluetun:8000
+      - GLUETUN_API_KEY=${GLUETUN_API_KEY}
     volumes:
       - jdown_config_jbot:/config:Z,rw
+      - jdown_config_gluetun:/gluetun:z,ro   # read servers.json for the VPN server picker
       - ${DOWNLOADS_PATH:-jdown_downloads}:/output:z,rw
       - ${MOVIE_DESTINATION:-jdown_movies}:/data/movies:z,rw
       - ${SERIES_DESTINATION:-jdown_series}:/data/series:z,rw
@@ -126,3 +135,4 @@ volumes:
   jdown_config_firefox:
   jdown_config_jdownloader:
   jdown_config_jbot:
+  jdown_config_gluetun:

@@ -15,6 +15,8 @@ Create a `.env` file next to `docker-compose.yml`.
 # VPN (required)
 OPENVPN_USER=
 OPENVPN_PASSWORD=
+# API key for gluetun's control server, used by jbot (required), e.g. output of: openssl rand -hex 16
+GLUETUN_API_KEY=
 
 # JDownloader web UI authentication (optional)
 WEB_AUTHENTICATION_USERNAME=admin
@@ -56,6 +58,7 @@ PROXY_PASSWORD=
 |---|---|
 | `OPENVPN_USER` | NordVPN OpenVPN username |
 | `OPENVPN_PASSWORD` | NordVPN OpenVPN password |
+| `GLUETUN_API_KEY` | API key for gluetun's control server (port 8000, internal only). jbot uses it to show the VPN status and switch servers. Any random string, e.g. `openssl rand -hex 16` |
 | `DOWNLOADS_PATH` | Host path where JDownloader saves files |
 | `MOVIE_DESTINATION` | Host path where organized movies are placed |
 | `SERIES_DESTINATION` | Host path where organized series are placed |
@@ -147,6 +150,12 @@ Scans the output folder for finished (or unlinked) media folders. Folders still 
 | **Invoke Plex Media Scan** | Trigger a Plex library scan after a successful organize |
 | **Delete downloaded source** | Remove the source folder after a successful copy |
 | **Auto-answer Dialogs** | Automatically confirm JDownloader dialogs (e.g. external link requests) |
+
+### Settings / VPN
+
+Shows the VPN status and public IP, and lets you switch the VPN country (and optionally city) at runtime. Gluetun reconnects in place, so JDownloader and Firefox keep running; active downloads resume automatically.
+
+The choice is saved in jbot's config and re-applied whenever gluetun runs with something else, e.g. after a container restart with the `SERVER_COUNTRIES` default from `docker-compose.yml`. The country/city list comes from gluetun's server list, which is refreshed every 24h (`UPDATER_PERIOD`) and kept in the `jdown_config_gluetun` volume.
 
 ## 6. Browsing through VPN
 

@@ -28,6 +28,13 @@ __all__ = [
     "jdown_get_archive_info",
     "jdown_linkgrabber_get_packages",
     "jdown_download_package",
+    "gluetun_is_configured",
+    "gluetun_get_settings",
+    "gluetun_get_status",
+    "gluetun_get_public_ip",
+    "gluetun_get_server_selection",
+    "gluetun_set_server_selection",
+    "gluetun_get_locations",
 ]
 
 _lazy = [
@@ -59,9 +66,22 @@ _lazy = [
     "jdown_download_package",
 ]
 
+_lazy_gluetun = [
+    "gluetun_is_configured",
+    "gluetun_get_settings",
+    "gluetun_get_status",
+    "gluetun_get_public_ip",
+    "gluetun_get_server_selection",
+    "gluetun_set_server_selection",
+    "gluetun_get_locations",
+]
+
 
 def __getattr__(name):
     if name in _lazy:
         from . import jdownloader
         return getattr(jdownloader, name)
+    if name in _lazy_gluetun:
+        from . import gluetun
+        return getattr(gluetun, name)
     raise AttributeError(f"module 'core' has no attribute '{name}'")

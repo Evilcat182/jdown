@@ -64,7 +64,14 @@ _SCHEMA = {
     "video_extensions":         {"default": [".mkv", ".mp4", ".avi", ".m4v", ".mov", ".wmv"],        "env": "VIDEO_EXTENSIONS",         "type": list, "ui": True},
     "media_confidence_fields":  {"default": ["screen_size", "source", "video_codec", "audio_codec"], "env": "MEDIA_CONFIDENCE_FIELDS",  "type": list, "ui": True},
 
+    # ── VPN server selection (set via the VPN section, re-applied to gluetun) ─
+    "vpn_country":              {"default": "", "env": None, "type": str, "ui": False},
+    "vpn_city":                 {"default": "", "env": None, "type": str, "ui": False},
+
     # ── Internal / secrets (env-only, not shown in UI) ──────────────────────
+    "gluetun_api_url":          {"default": "http://gluetun:8000",    "env": "GLUETUN_API_URL",          "type": str,  "ui": False},
+    "gluetun_api_key":          {"default": "",                       "env": "GLUETUN_API_KEY",          "type": str,  "ui": False},  # secret
+    "gluetun_servers_file":     {"default": "/gluetun/servers.json",  "env": "GLUETUN_SERVERS_FILE",     "type": str,  "ui": False},
     "api_base_url":             {"default": "http://gluetun:3128", "env": "API_BASE_URL",             "type": str,  "ui": False},
     "debug":                    {"default": False,                 "env": "DEBUG",                    "type": bool, "ui": False},
     "extraction_passwords":     {"default": "",                    "env": "EXTRACTION_PASSWORDS",     "type": str,  "ui": False},

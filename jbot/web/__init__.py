@@ -255,3 +255,64 @@ def api_organize_progress():
         percent = round(min(100.0, job["copied_bytes"] / total * 100), 1) if total > 0 else 100.0
         jobs.append({"path": p, "percent": percent, **job})
     return jsonify({"active": bool(jobs), "jobs": jobs})
+
+
+@app.route("/api/vpn")
+def api_vpn():
+    from core.gluetun import (
+        gluetun_is_configured, gluetun_get_settings, gluetun_get_status,
+        gluetun_get_public_ip, gluetun_get_locations,
+    )
+    selected = {"country": config.get_config("vpn_country"), "city": config.get_config("vpn_city")}
+    if not gluetun_is_configured():
+        return jsonify({"configured": False, "selected": selected})
+
+    settings = gluetun_get_settings()
+    if settings is None:
+        return jsonify({"configured": True, "reachable": False, "selected": selected})
+
+    provider = (settings.get("provider") or {}).get("name") or ""
+    selection = (settings.get("provider") or {}).get("server_selection") or {}
+    return jsonify({
+        "configured": True,
+        "reachable":  True,
+        "status":     gluetun_get_status(),
+        "public_ip":  gluetun_get_public_ip(),
+        "provider":   provider,
+        "current":    {"countries": selection.get("countries") or [], "cities": selection.get("cities") or []},
+        "selected":   selected,
+        "locations":  gluetun_get_locations(provider, settings.get("type") or ""),
+    })
+
+
+@app.route("/api/vpn", methods=["POST"])
+def api_vpn_set():
+    from core.gluetun import gluetun_is_configured, gluetun_get_settings, gluetun_get_locations, gluetun_set_server_selection
+    if not gluetun_is_configured():
+        return jsonify({"ok": False, "error": "GLUETUN_API_KEY is not set"}), 400
+
+    data = request.get_json(silent=True) or {}
+    country = (data.get("country") or "").strip()
+    city = (data.get("city") or "").strip()
+    if not country:
+        return jsonify({"ok": False, "error": "country is required"}), 400
+
+    # Validate against the server list when it is available (gluetun validates too)
+    settings = gluetun_get_settings() or {}
+    provider = (settings.get("provider") or {}).get("name") or ""
+    locations = gluetun_get_locations(provider, settings.get("type") or "") if provider else None
+    if locations is not None:
+        if country not in locations:
+            return jsonify({"ok": False, "error": f"Unknown country '{country}'"}), 400
+        if city and city not in locations[country]:
+            return jsonify({"ok": False, "error": f"Unknown city '{city}' in {country}"}), 400
+
+    ok, message = gluetun_set_server_selection(country, city)
+    if not ok:
+        return jsonify({"ok": False, "error": message}), 502
+
+    # Persist only after gluetun accepted it, the VPN watcher re-applies it after restarts
+    config.patch_config({"vpn_country": country, "vpn_city": city})
+    target = f"{country}/{city}" if city else country
+    log(f"VPN server changed to '{target}'", PREFIX)
+    return jsonify({"ok": True, "message": message})
