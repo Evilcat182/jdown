@@ -108,7 +108,12 @@
               <p class="section-sub">Downloads run through gluetun. Switching servers applies right away.</p>
             </div>
           </div>
-          <div class="panel">
+          <div class="panel vpn-panel">
+            <div class="panel-overlay" id="vpn-overlay" role="status" aria-live="polite" hidden>
+              <span class="spinner" aria-hidden="true"></span>
+              <span class="overlay-title" id="vpn-overlay-title">Switching server…</span>
+              <span class="overlay-sub" id="vpn-overlay-sub">Waiting for gluetun to reconnect</span>
+            </div>
             <div class="row">
               <div>
                 <div class="row-key">Connection</div>
@@ -570,6 +575,7 @@
       const pub = data.public_ip || {};
       const where = [pub.city, pub.country].filter(Boolean).join(', ');
       ip.textContent = pub.public_ip ? `${where ? where + ', ' : ''}${pub.public_ip}` : '';
+      ip.dataset.ip = pub.public_ip || '';
       return true;
     }
 
@@ -619,12 +625,53 @@
       }).catch(() => setVpnNote('Could not load VPN status', true));
     }
 
+    const VPN_TIMEOUT_MS = 30000;
+    let vpnSwitching = false;
+
+    function showVpnOverlay(title, sub) {
+      document.getElementById('vpn-overlay-title').textContent = title;
+      document.getElementById('vpn-overlay-sub').textContent = sub;
+      document.getElementById('vpn-overlay').hidden = false;
+    }
+    function hideVpnOverlay() { document.getElementById('vpn-overlay').hidden = true; }
+
+    // Poll gluetun until it reports running with a public IP, or give up after VPN_TIMEOUT_MS.
+    // The old IP can still be reported right after the switch, so it only counts once the
+    // connection dropped in between or the IP changed.
+    function waitForVpn(target, oldIp) {
+      const started = Date.now();
+      let sawDown = false;
+      return new Promise(resolve => {
+        const tick = () => {
+          const left = Math.ceil((VPN_TIMEOUT_MS - (Date.now() - started)) / 1000);
+          if (left <= 0) return resolve(null);
+          document.getElementById('vpn-overlay-sub').textContent =
+            `Waiting for gluetun to reconnect, up to ${left}s`;
+          fetch('/api/vpn').then(r => r.json()).then(data => {
+            const ip = (data.public_ip || {}).public_ip;
+            const up = data.reachable && data.status === 'running' && ip;
+            if (!up) sawDown = true;
+            if (up && (sawDown || ip !== oldIp)) {
+              renderVpnStatus(data);
+              return resolve(data);
+            }
+            setTimeout(tick, 2000);
+          }).catch(() => { sawDown = true; setTimeout(tick, 2000); });
+        };
+        setTimeout(tick, 1500);
+      });
+    }
+
     function applyVpn() {
       const btn = document.getElementById('btn-vpn-apply');
       const country = document.getElementById('vpn-country').value;
       const city    = document.getElementById('vpn-city').value;
+      const target  = city ? `${city}, ${country}` : country;
+      const oldIp   = document.getElementById('vpn-ip').dataset.ip || '';
       btn.disabled = true;
-      btn.textContent = 'Switching…';
+      vpnSwitching = true;
+      setVpnNote('');
+      showVpnOverlay(`Switching to ${target}…`, 'Sending the new server to gluetun');
       fetch('/api/vpn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -632,23 +679,31 @@
       })
         .then(r => r.json())
         .then(data => {
-          if (data.ok) {
-            showToast('Server switched, reconnecting…', 'ok');
-            setVpnNote('Reconnecting, downloads resume automatically');
-            // Gluetun needs a few seconds to reconnect and look up the new IP
-            setTimeout(() => loadVpn(false).then(() => setVpnNote('')), 8000);
-          } else {
-            showToast('Server not switched', 'err');
-            setVpnNote(data.error || 'Server not switched', true);
-          }
+          if (!data.ok) throw new Error(data.error || 'Server not switched');
+          return waitForVpn(target, oldIp).then(res => {
+            if (res) {
+              showToast(`Connected to ${target}, IP ${res.public_ip.public_ip}`, 'ok');
+            } else {
+              showToast('No VPN connection after 30s', 'err');
+              setVpnNote('Gluetun did not report a connection within 30s. Check the gluetun container logs.', true);
+              loadVpn(false);
+            }
+          });
         })
-        .catch(() => showToast('Server not switched', 'err'))
-        .finally(() => { btn.disabled = false; btn.textContent = 'Switch server'; });
+        .catch(err => {
+          showToast('Server not switched', 'err');
+          setVpnNote(err.message || 'Server not switched', true);
+        })
+        .finally(() => {
+          vpnSwitching = false;
+          hideVpnOverlay();
+          btn.disabled = false;
+        });
     }
 
     loadSettings();
     loadVpn();
-    setInterval(() => loadVpn(false), 15000);
+    setInterval(() => { if (!vpnSwitching) loadVpn(false); }, 15000);
   </script>
 </body>
 </html>

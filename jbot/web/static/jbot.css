@@ -502,6 +502,25 @@ select.input {
 .vpn-foot { display: flex; align-items: center; gap: 12px; justify-content: space-between; flex-wrap: wrap; padding: 14px 18px; border-top: 1px solid var(--line); }
 .vpn-note { font-size: 13px; color: var(--text-2); }
 .vpn-note.err { color: var(--danger); }
+.vpn-panel { position: relative; }
+.panel-overlay {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 20px; text-align: center;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border-radius: inherit;
+}
+.overlay-title { font-stretch: 112%; font-size: 16px; font-weight: 700; margin-top: 8px; }
+.overlay-sub { font-size: 13.5px; color: var(--text-2); }
+.spinner {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 3px solid var(--line-2);
+  border-top-color: var(--signal);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Exclusions */
 .excludes { padding: 14px 18px 16px; }
@@ -604,6 +623,10 @@ body.modal-open { overflow: hidden; }
   .topbar-inner { padding: 10px 16px; min-height: 58px; gap: 10px; }
   .wordmark { font-size: 19px; }
   .speed-total { display: none; }
+  .topbar-actions { gap: 6px; }
+  .topbar-actions .btn-label { display: none; }
+  .topbar-actions .btn { width: 36px; min-height: 36px; padding: 0; }
+  .topbar-settings { display: none; }   /* the tab bar has Settings */
   .page { padding: 20px 16px calc(var(--tabbar-h) + 28px); }
   .dash { gap: 0; }
   .dash-main { gap: 0; }
@@ -676,9 +699,9 @@ body.modal-open { overflow: hidden; }
 
 @media (max-width: 340px) {
   .scan-fields { grid-template-columns: 1fr; }
-  .topbar-actions .btn-label { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .01ms !important; animation: none !important; }
+  .spinner { animation: spin 2.4s linear infinite !important; }
 }
