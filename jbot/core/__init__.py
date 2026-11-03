@@ -35,6 +35,10 @@ __all__ = [
     "gluetun_get_server_selection",
     "gluetun_set_server_selection",
     "gluetun_get_locations",
+    "gluetun_get_connection",
+    "gluetun_probe_tunnel",
+    "gluetun_wait_connected",
+    "gluetun_restart_vpn",
 ]
 
 _lazy = [
@@ -74,6 +78,10 @@ _lazy_gluetun = [
     "gluetun_get_server_selection",
     "gluetun_set_server_selection",
     "gluetun_get_locations",
+    "gluetun_get_connection",
+    "gluetun_probe_tunnel",
+    "gluetun_wait_connected",
+    "gluetun_restart_vpn",
 ]
 
 

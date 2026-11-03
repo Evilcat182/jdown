@@ -261,7 +261,7 @@ def api_organize_progress():
 def api_vpn():
     from core.gluetun import (
         gluetun_is_configured, gluetun_get_settings, gluetun_get_status,
-        gluetun_get_public_ip, gluetun_get_locations,
+        gluetun_get_connection, gluetun_get_locations,
     )
     selected = {"country": config.get_config("vpn_country"), "city": config.get_config("vpn_city")}
     if not gluetun_is_configured():
@@ -277,7 +277,7 @@ def api_vpn():
         "configured": True,
         "reachable":  True,
         "status":     gluetun_get_status(),
-        "public_ip":  gluetun_get_public_ip(),
+        "public_ip":  gluetun_get_connection() or {"public_ip": ""},
         "provider":   provider,
         "current":    {"countries": selection.get("countries") or [], "cities": selection.get("cities") or []},
         "selected":   selected,
@@ -287,7 +287,8 @@ def api_vpn():
 
 @app.route("/api/vpn", methods=["POST"])
 def api_vpn_set():
-    from core.gluetun import gluetun_is_configured, gluetun_get_settings, gluetun_get_locations, gluetun_set_server_selection
+    from core.gluetun import gluetun_is_configured, gluetun_get_settings, gluetun_get_locations
+    from core.gluetun import switch_lock as gluetun_switch_lock
     if not gluetun_is_configured():
         return jsonify({"ok": False, "error": "GLUETUN_API_KEY is not set"}), 400
 
@@ -307,12 +308,48 @@ def api_vpn_set():
         if city and city not in locations[country]:
             return jsonify({"ok": False, "error": f"Unknown city '{city}' in {country}"}), 400
 
+    if not gluetun_switch_lock.acquire(blocking=False):
+        return jsonify({"ok": False, "error": "Another server switch is in progress"}), 409
+    try:
+        return _switch_vpn(country, city, settings)
+    finally:
+        gluetun_switch_lock.release()
+
+
+def _switch_vpn(country: str, city: str, settings: dict):
+    from core.gluetun import (
+        gluetun_set_server_selection, gluetun_wait_connected, gluetun_restart_vpn,
+        CONNECT_TIMEOUT, CONNECT_ATTEMPTS,
+    )
+    selection = (settings.get("provider") or {}).get("server_selection") or {}
+    previous = ((selection.get("countries") or [""])[0], (selection.get("cities") or [""])[0])
+    target = f"{country}/{city}" if city else country
+
     ok, message = gluetun_set_server_selection(country, city)
     if not ok:
         return jsonify({"ok": False, "error": message}), 502
 
-    # Persist only after gluetun accepted it, the VPN watcher re-applies it after restarts
-    config.patch_config({"vpn_country": country, "vpn_city": city})
-    target = f"{country}/{city}" if city else country
-    log(f"VPN server changed to '{target}'", PREFIX)
-    return jsonify({"ok": True, "message": message})
+    # OpenVPN retries a dead or rejecting server forever, so after each attempt
+    # reconnect, which makes gluetun pick another random server in the country
+    info = None
+    for attempt in range(1, CONNECT_ATTEMPTS + 1):
+        info = gluetun_wait_connected(CONNECT_TIMEOUT)
+        if info or attempt == CONNECT_ATTEMPTS:
+            break
+        log(f"No VPN connection to '{target}' within {CONNECT_TIMEOUT}s, trying another server", PREFIX)
+        gluetun_restart_vpn()
+    if info:
+        # Persist only once it works, the VPN watcher re-applies it after restarts
+        config.patch_config({"vpn_country": country, "vpn_city": city})
+        log(f"VPN server changed to '{target}' (IP {info.get('public_ip')})", PREFIX)
+        return jsonify({"ok": True, "message": message, "public_ip": info})
+
+    error = f"No VPN connection to '{target}' after trying {CONNECT_ATTEMPTS} servers"
+    if previous[0]:
+        back = f"{previous[0]}/{previous[1]}" if previous[1] else previous[0]
+        log(f"{error}, switching back to '{back}'", PREFIX, "warning")
+        gluetun_set_server_selection(*previous)
+        error += f", switched back to '{back}'"
+    else:
+        log(error, PREFIX, "warning")
+    return jsonify({"ok": False, "error": error + ". Check the gluetun logs."}), 504

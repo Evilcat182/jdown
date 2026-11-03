@@ -71,6 +71,7 @@ _SCHEMA = {
     # ── Internal / secrets (env-only, not shown in UI) ──────────────────────
     "gluetun_api_url":          {"default": "http://gluetun:8000",    "env": "GLUETUN_API_URL",          "type": str,  "ui": False},
     "gluetun_api_key":          {"default": "",                       "env": "GLUETUN_API_KEY",          "type": str,  "ui": False},  # secret
+    "gluetun_proxy_url":        {"default": "http://gluetun:8888",    "env": "GLUETUN_PROXY_URL",        "type": str,  "ui": False},
     "gluetun_servers_file":     {"default": "/gluetun/servers.json",  "env": "GLUETUN_SERVERS_FILE",     "type": str,  "ui": False},
     "api_base_url":             {"default": "http://gluetun:3128", "env": "API_BASE_URL",             "type": str,  "ui": False},
     "debug":                    {"default": False,                 "env": "DEBUG",                    "type": bool, "ui": False},

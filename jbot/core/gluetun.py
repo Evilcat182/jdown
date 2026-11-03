@@ -1,10 +1,20 @@
 import json
+import threading
+import time
 import requests
 import config
 from pathlib import Path
 from .logger import log
 
 PREFIX = "[Gluetun]"
+CONNECT_TIMEOUT = 20   # seconds to wait for a tunnel from one server
+CONNECT_ATTEMPTS = 3   # servers to try before a switch counts as failed
+PROBE_URL = "https://ipinfo.io/json"
+PROBE_TIMEOUT = 5
+
+# Held while a server switch waits for its tunnel, so the VPN watcher
+# does not reconnect in the middle of it
+switch_lock = threading.Lock()
 
 # servers.json is several MB, so parse it only when it changed
 _locations_cache: dict = {"key": None, "data": None}
@@ -84,6 +94,56 @@ def gluetun_set_server_selection(country: str, city: str = "") -> tuple[bool, st
         log(f"Changing VPN server failed: HTTP {res.status_code}: {message}", PREFIX, "error")
         return False, message or f"HTTP {res.status_code}"
     return True, message
+
+
+def gluetun_probe_tunnel() -> dict | None:
+    """Fetch the public IP through gluetun's HTTP proxy. Gluetun's firewall only
+    lets this through a working tunnel, so it also works when gluetun's own IP
+    lookup failed after connecting (it does not retry it). Returns
+    {"public_ip", "country", "city"} or None while there is no tunnel."""
+    proxy = config.get_config("gluetun_proxy_url")
+    try:
+        res = requests.get(PROBE_URL, proxies={"http": proxy, "https": proxy}, timeout=PROBE_TIMEOUT)
+        data = res.json() if res.status_code == 200 else {}
+    except (requests.RequestException, ValueError) as exc:
+        log(f"Tunnel probe failed: {exc}", PREFIX, "debug")
+        return None
+    if not data.get("ip"):
+        return None
+    return {"public_ip": data["ip"], "country": data.get("country", ""), "city": data.get("city", "")}
+
+
+def gluetun_get_connection() -> dict | None:
+    """Return the public IP info of a working tunnel, or None if there is none."""
+    info = gluetun_get_public_ip() or {}
+    if info.get("public_ip"):
+        return info
+    return gluetun_probe_tunnel()
+
+
+def gluetun_wait_connected(timeout: int = CONNECT_TIMEOUT) -> dict | None:
+    """Wait until gluetun has a working tunnel after a reconnect.
+    Gluetun tears the old tunnel down before it answers the PUT, so any
+    connection seen afterwards is the new one.
+    Returns the public IP info, or None if it did not connect in time."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        time.sleep(2)
+        info = gluetun_get_connection()
+        if info:
+            return info
+    return None
+
+
+def gluetun_restart_vpn() -> bool:
+    """Reconnect the VPN, gluetun picks a new random server from the filter."""
+    for status in ("stopped", "running"):
+        res = _request("PUT", "/v1/vpn/status", {"status": status})
+        if res is None or res.status_code != 200:
+            log(f"Setting VPN status '{status}' failed: {res.text.strip() if res is not None else 'not reachable'}",
+                PREFIX, "error")
+            return False
+    return True
 
 
 def gluetun_get_locations(provider: str, vpn_type: str) -> dict[str, list[str]] | None:

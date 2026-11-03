@@ -1,9 +1,14 @@
 import time
 import config
-from core import log, gluetun_is_configured, gluetun_get_server_selection, gluetun_set_server_selection
+from core import (
+    log, gluetun_is_configured, gluetun_get_server_selection, gluetun_set_server_selection,
+    gluetun_get_status, gluetun_get_connection, gluetun_restart_vpn,
+)
+from core.gluetun import switch_lock
 
 PREFIX = "[VPN]"
-POLL_INTERVAL = 30  # seconds between checks
+POLL_INTERVAL = 30   # seconds between checks
+STUCK_AFTER = 120    # reconnect if gluetun has no tunnel for this long
 
 
 def _matches(current: list[str], wanted: list[str]) -> bool:
@@ -37,15 +42,46 @@ def enforce_selection(last_error: str | None = None) -> str | None:
     return error
 
 
+def check_tunnel(down_since: float | None) -> float | None:
+    """Reconnect when gluetun has been without a tunnel for STUCK_AFTER seconds.
+    OpenVPN keeps retrying a dead or rejecting server (TLS timeout, AUTH_FAILED)
+    forever, a reconnect makes gluetun pick another server from the filter.
+    Returns the time the tunnel went down, or None while it is up."""
+    if gluetun_get_status() != "running":
+        return None  # stopped on purpose or not reachable, nothing to repair
+    if gluetun_get_connection():
+        if down_since is not None:
+            log("VPN connection is back", PREFIX)
+        return None
+
+    now = time.monotonic()
+    if down_since is None:
+        return now
+    if now - down_since < STUCK_AFTER:
+        return down_since
+    log(f"No VPN connection for {int(now - down_since)}s, reconnecting to another server", PREFIX, "warning")
+    gluetun_restart_vpn()
+    return now
+
+
 def run():
     if not gluetun_is_configured():
         log("GLUETUN_API_KEY not set, VPN server selection disabled", PREFIX, "warning")
         return
     log("Starting VPN watcher", PREFIX)
     last_error = None
+    down_since = None
     while True:
         try:
-            last_error = enforce_selection(last_error)
+            # A switch from the web UI is waiting for its tunnel, leave it alone
+            if switch_lock.acquire(blocking=False):
+                try:
+                    last_error = enforce_selection(last_error)
+                    down_since = check_tunnel(down_since)
+                finally:
+                    switch_lock.release()
+            else:
+                down_since = None
         except Exception as exc:
             log(f"Unexpected error: {exc}", PREFIX, "error")
         time.sleep(POLL_INTERVAL)

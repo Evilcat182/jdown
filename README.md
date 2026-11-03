@@ -143,6 +143,19 @@ Shows the VPN status and public IP, and lets you switch the VPN country (and opt
 
 The choice is saved in jbot's config and re-applied whenever gluetun runs with something else, e.g. after a container restart with the `SERVER_COUNTRIES` default from `docker-compose.yml`. The country/city list comes from gluetun's server list, which is refreshed every 24h (`UPDATER_PERIOD`) and kept in the `jdown_config_gluetun` volume.
 
+A switch only counts once the new tunnel is up. If a server doesn't connect within 20 s, jbot has gluetun try another server in that country. After 3 failed servers it switches back to the previous one and doesn't save the new choice. If the VPN drops at runtime and stays down for 2 minutes, jbot reconnects, and gluetun then picks a different server in the same country.
+
+#### Switching often fails / `TLS key negotiation failed` / `ENETUNREACH`
+
+The server list built into the gluetun image can be years old, so many of its IPs no longer exist. On a fresh volume, or if switches keep failing, update the list manually. This runs outside the VPN, so it also works while the tunnel is down. Then restart the stack so gluetun loads the new list:
+
+```bash
+sudo podman run --rm --volumes-from gluetun qmcgaw/gluetun:v3.41.3 update -enduser -providers nordvpn
+sudo podman restart gluetun && sudo podman restart jdownloader firefox jbot
+```
+
+`AUTH_FAILED` in the gluetun log means the server rejects your service credentials. That's on NordVPN's side, and jbot can't fix it. If it happens for every server in a country, pick a different country.
+
 ## 6. Browsing through VPN
 
 Some mobile first suckers like my friend lexar prefere the mobile browsing expirience, because they are unwilling to lift their lazy asses of the coach.
