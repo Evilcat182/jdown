@@ -9,48 +9,13 @@ This stack provides a fully automated, VPN-routed download pipeline:
 
 ## 1. Create .env
 
-Create a `.env` file next to `docker-compose.yml`.
+Copy the example file next to `docker-compose.yml` and fill in the values:
 
-```env
-# VPN (required)
-OPENVPN_USER=
-OPENVPN_PASSWORD=
-# API key for gluetun's control server, used by jbot (required), e.g. output of: openssl rand -hex 16
-GLUETUN_API_KEY=
-
-# JDownloader web UI authentication (optional)
-WEB_AUTHENTICATION_USERNAME=admin
-WEB_AUTHENTICATION_PASSWORD=
-
-# Host paths (required)
-DOWNLOADS_PATH=
-MOVIE_DESTINATION=
-SERIES_DESTINATION=
-
-# Premium download account (optional)
-PREMIUM_ACCOUNT_HOSTER=
-PREMIUM_ACCOUNT_USERNAME=
-PREMIUM_ACCOUNT_PASSWORD=
-
-# Archive extraction passwords, comma-separated (optional)
-EXTRACTION_PASSWORDS=
-
-# Plex integration (optional)
-PLEX_API_ROOT=
-PLEX_TOKEN=
-PLEX_MOVIE_LIB_NAME=
-PLEX_SHOW_LIB_NAME=
-
-# Firefox startup URL(s), separated by | (optional)
-FF_OPEN_URL=
-
-# Verbose debug logging, set to 1 to enable (default: 0)
-DEBUG=0
-
-# HTTP proxy credentials for gluetun (optional)
-PROXY_USER=
-PROXY_PASSWORD=
+```bash
+cp .env.example .env
 ```
+
+`.env` is gitignored, so your credentials stay out of the repository.
 
 ### Required variables
 
@@ -58,10 +23,31 @@ PROXY_PASSWORD=
 |---|---|
 | `OPENVPN_USER` | NordVPN OpenVPN username |
 | `OPENVPN_PASSWORD` | NordVPN OpenVPN password |
-| `GLUETUN_API_KEY` | API key for gluetun's control server (port 8000, internal only). jbot uses it to show the VPN status and switch servers. Any random string, e.g. `openssl rand -hex 16` |
+| `GLUETUN_API_KEY` | API key for gluetun's control server, see [The gluetun API key](#the-gluetun-api-key) |
 | `DOWNLOADS_PATH` | Host path where JDownloader saves files |
 | `MOVIE_DESTINATION` | Host path where organized movies are placed |
 | `SERIES_DESTINATION` | Host path where organized series are placed |
+
+### The gluetun API key
+
+`GLUETUN_API_KEY` is a shared secret between gluetun and jbot, and you can choose any value:
+
+- **gluetun** gets it via `HTTP_CONTROL_SERVER_AUTH_DEFAULT_ROLE` and only answers control-server requests (port 8000) that send this key.
+- **jbot** sends it in the `X-API-Key` header to show the VPN status and switch the VPN server.
+
+Both are filled from the same `.env` entry, so they always match. `docker compose up` stops with an error if it is missing.
+
+Use letters and digits only (no `"`, `\` or `$`, which would break the JSON value or Compose's variable syntax), ideally 20+ characters. To generate one:
+
+```bash
+openssl rand -hex 16
+```
+
+Port 8000 is not published to the host, so only containers in the stack's network can reach the control server. After changing the key, recreate the whole stack, because restarting gluetun also cuts the network of Firefox and JDownloader:
+
+```bash
+docker compose down && docker compose up -d
+```
 
 ### Optional variables
 
