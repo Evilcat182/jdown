@@ -271,6 +271,55 @@
     }
     .save-status { font-size: 12px; color: var(--text-3); }
 
+    /* ── Placeholder help ──────────────────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,.6);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px 16px;
+    }
+    .modal-backdrop[hidden] { display: none; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%; max-width: 640px; max-height: 100%;
+      display: flex; flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0,0,0,.5);
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .modal-title { font-size: 14px; font-weight: 600; }
+    .modal-close:hover { color: var(--text-1); border-color: var(--border-2); background: var(--border); }
+    .modal .help-body { overflow-y: auto; border-top: none; }
+    body.modal-open { overflow: hidden; }
+    .help-body { padding: 4px 18px 16px; }
+    .help-body p, .help-body li { font-size: 12px; color: var(--text-2); }
+    .help-body ul { margin: 8px 0 12px 18px; display: flex; flex-direction: column; gap: 4px; }
+    .help-body code, .help-table code {
+      font-family: 'JetBrains Mono','Fira Code','Courier New',monospace; font-size: 11.5px;
+      color: var(--text-1); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 4px; padding: 0 4px;
+    }
+    .help-group {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-3); padding: 14px 0 6px;
+    }
+    .help-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .help-table th {
+      font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-3); text-align: left; padding: 0 8px 6px 0;
+    }
+    .help-table td { padding: 5px 8px 5px 0; border-top: 1px solid var(--border); vertical-align: top; color: var(--text-2); }
+    .help-table td:first-child { white-space: nowrap; }
+    .help-table td.ex { font-family: 'JetBrains Mono','Fira Code','Courier New',monospace; font-size: 11.5px; color: var(--text-1); word-break: break-word; }
+    .help-link { color: var(--accent); text-decoration: none; cursor: pointer; }
+    .help-link:hover { text-decoration: underline; }
+
     /* ── VPN ───────────────────────────────────────────────────────────────── */
     select.text-input { cursor: pointer; }
     .vpn-status { display: flex; align-items: center; gap: 8px; padding-top: 5px; font-size: 12.5px; flex-wrap: wrap; }
@@ -427,6 +476,60 @@
       </div>
     </section>
 
+    <!-- Placeholder help (overlay) -->
+    <div class="modal-backdrop" id="placeholder-help" onclick="if (event.target === this) closePlaceholderHelp()" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="placeholder-help-title">
+        <div class="modal-header">
+          <span class="modal-title" id="placeholder-help-title">Available placeholders</span>
+          <button class="btn btn-icon btn-sm modal-close" onclick="closePlaceholderHelp()" title="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="help-body">
+          <ul>
+            <li>Write a field name in braces, e.g. <code>{title}</code>. The same names are used for <em>Mandatory fields</em>, without braces.</li>
+            <li>Folder templates are split at spaces, file templates and the episode folder template at dots. A part whose field is missing is <strong>left out</strong>, e.g. <code>{title} {year_in_brackets}</code> becomes <code>Dune</code> when there is no year.</li>
+            <li>The file extension (<code>.mkv</code>, …) is added automatically.</li>
+            <li>Values come from the folder name, then the video file name, as detected by guessit. Not every release contains every field.</li>
+          </ul>
+
+          <div class="help-group">Added by jbot</div>
+          <table class="help-table">
+            <thead><tr><th>Placeholder</th><th>Description</th><th>Example</th></tr></thead>
+            <tbody>
+              <tr><td><code>{dotted_title}</code></td><td>Title with dots instead of spaces</td><td class="ex">Crystal.Lake</td></tr>
+              <tr><td><code>{year_in_brackets}</code></td><td>Year in parentheses</td><td class="ex">(2024)</td></tr>
+              <tr><td><code>{season_and_episode}</code></td><td>Season and episode, series only</td><td class="ex">S01E03</td></tr>
+              <tr><td><code>{dotted_episode_title}</code></td><td>Episode title with dots, series only</td><td class="ex">The.Long.Night</td></tr>
+            </tbody>
+          </table>
+
+          <div class="help-group">Detected by guessit</div>
+          <table class="help-table">
+            <thead><tr><th>Placeholder</th><th>Description</th><th>Example</th></tr></thead>
+            <tbody>
+              <tr><td><code>{title}</code></td><td>Movie or show title</td><td class="ex">Crystal Lake</td></tr>
+              <tr><td><code>{year}</code></td><td>Release year</td><td class="ex">2024</td></tr>
+              <tr><td><code>{season}</code></td><td>Season number, without padding</td><td class="ex">1</td></tr>
+              <tr><td><code>{episode}</code></td><td>Episode number, without padding</td><td class="ex">3</td></tr>
+              <tr><td><code>{episode_title}</code></td><td>Episode title</td><td class="ex">The Long Night</td></tr>
+              <tr><td><code>{screen_size}</code></td><td>Resolution, always ends in <code>p</code></td><td class="ex">1080p, 2160p</td></tr>
+              <tr><td><code>{video_codec}</code></td><td>Video codec, dots removed</td><td class="ex">H264, H265</td></tr>
+              <tr><td><code>{audio_codec}</code></td><td>Audio codec</td><td class="ex">AAC, Dolby Digital Plus</td></tr>
+              <tr><td><code>{audio_channels}</code></td><td>Audio channels</td><td class="ex">5.1</td></tr>
+              <tr><td><code>{source}</code></td><td>Source of the release</td><td class="ex">Web, Blu-ray, Ultra HD Blu-ray</td></tr>
+              <tr><td><code>{other}</code></td><td>Extra tags such as HDR</td><td class="ex">HDR10</td></tr>
+              <tr><td><code>{edition}</code></td><td>Edition</td><td class="ex">Director's Cut</td></tr>
+              <tr><td><code>{streaming_service}</code></td><td>Streaming service</td><td class="ex">Netflix</td></tr>
+              <tr><td><code>{release_group}</code></td><td>Release group</td><td class="ex">GROUP</td></tr>
+              <tr><td><code>{part}</code></td><td>Part number of a movie</td><td class="ex">2</td></tr>
+            </tbody>
+          </table>
+          <p style="margin-top:12px;">Some values contain spaces (e.g. <code>{source}</code>, <code>{audio_codec}</code>), which then also appear in dotted file names. <code>{other}</code> can be a list when a release has several tags.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Movie organizer -->
     <section>
       <div class="section-label">Organizer – Movies</div>
@@ -434,14 +537,14 @@
         <div class="settings-row">
           <div>
             <div class="settings-key">Folder template</div>
-            <div class="settings-hint">Name of the folder created for the movie</div>
+            <div class="settings-hint">Name of the folder created for the movie · <a class="help-link" onclick="openPlaceholderHelp()">Placeholders</a></div>
           </div>
           <input class="text-input mono" id="s-movie_folder_template">
         </div>
         <div class="settings-row">
           <div>
             <div class="settings-key">File template</div>
-            <div class="settings-hint">Rename template for the video file</div>
+            <div class="settings-hint">Rename template for the video file · <a class="help-link" onclick="openPlaceholderHelp()">Placeholders</a></div>
           </div>
           <input class="text-input mono" id="s-movie_file_template">
         </div>
@@ -465,6 +568,7 @@
         <div class="settings-row">
           <div>
             <div class="settings-key">Show folder template</div>
+            <div class="settings-hint"><a class="help-link" onclick="openPlaceholderHelp()">Placeholders</a></div>
           </div>
           <input class="text-input mono" id="s-series_folder_template">
         </div>
@@ -705,6 +809,19 @@
     function escAttr(s) {
       return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
+
+    // ── Placeholder help ──────────────────────────────────────────────────────
+    function openPlaceholderHelp() {
+      document.getElementById('placeholder-help').hidden = false;
+      document.body.classList.add('modal-open');
+    }
+    function closePlaceholderHelp() {
+      document.getElementById('placeholder-help').hidden = true;
+      document.body.classList.remove('modal-open');
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !document.getElementById('placeholder-help').hidden) closePlaceholderHelp();
+    });
 
     // ── VPN ───────────────────────────────────────────────────────────────────
     let vpnLocations = {};
