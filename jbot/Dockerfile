@@ -2,6 +2,8 @@ FROM python:3.12-slim
 
 RUN groupadd -g 1000 app && useradd -u 1000 -g app -s /bin/sh -m app
 
+ENV PYTHONDONTWRITEBYTECODE=1
+
 WORKDIR /app
 
 COPY requirements.txt .

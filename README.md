@@ -3,7 +3,7 @@
 This stack provides a fully automated, VPN-routed download pipeline:
 
 - **gluetun** — routes all traffic through a VPN (NordVPN/OpenVPN), acts as the shared network namespace for all services
-- **firefox** — containerized browser with AdBlock and the JDownloader extension pre-installed, so Click & Load works out of the box
+- **firefox** — containerized browser with uBlock Origin and the JDownloader extension pre-installed, so Click & Load works out of the box
 - **jdownloader** — download manager, accessible via web UI, all traffic goes through the VPN
 - **jdown-bot** — Python automation layer that auto-starts downloads, organizes finished files into movie/series destinations, renames them, and triggers a Plex media scan on success
 
@@ -111,7 +111,7 @@ Open:
 http://HOST-IP:5801
 ```
 
-The browser has AdBlock and the JDownloader extension pre-installed. Use it to browse download sites — Click & Load will send links directly to JDownloader.
+The browser has uBlock Origin (with a built-in exception for Click & Load) and the JDownloader extension pre-installed. Use it to browse download sites — Click & Load will send links directly to JDownloader.
 
 ## 5. Access jdown-bot
 

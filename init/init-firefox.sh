@@ -22,14 +22,39 @@ POLICIES_FILE="$FF_DIST/policies.json"
 cat > "$POLICIES_FILE" << 'EOF'
 {
   "policies": {
+    "Preferences": {
+      "network.lna.enabled": { "Value": false, "Status": "locked" },
+      "network.lna.blocking": { "Value": false, "Status": "locked" }
+    },
     "ExtensionSettings": {
       "{03e07985-30b0-4ae0-8b3e-0c7519b9bdf6}": {
         "installation_mode": "force_installed",
         "install_url": "https://addons.mozilla.org/firefox/downloads/latest/download-with-jdownloader/latest.xpi"
       },
       "adguardadblocker@adguard.com": {
+        "installation_mode": "blocked"
+      },
+      "uBlock0@raymondhill.net": {
         "installation_mode": "force_installed",
-        "install_url": "https://addons.mozilla.org/firefox/downloads/latest/adguard-adblocker/latest.xpi"
+        "install_url": "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"
+      }
+    },
+    "3rdparty": {
+      "Extensions": {
+        "uBlock0@raymondhill.net": {
+          "toOverwrite": {
+            "trustedSiteDirectives": [
+              "chrome-extension-scheme",
+              "moz-extension-scheme",
+              "filecrypt.cc",
+              "filecrypt.co"
+            ],
+            "filters": [
+              "@@||127.0.0.1:9666^",
+              "@@||localhost:9666^"
+            ]
+          }
+        }
       }
     }
   }
