@@ -2,7 +2,8 @@ import time
 import config
 from core import (
     log, gluetun_is_configured, gluetun_get_server_selection, gluetun_set_server_selection,
-    gluetun_get_status, gluetun_get_connection, gluetun_restart_vpn,
+    gluetun_get_status, gluetun_get_connection, gluetun_restart_vpn, gluetun_wait_connected,
+    jdown_downloads_suspend, jdown_downloads_resume,
 )
 from core.gluetun import switch_lock
 
@@ -32,14 +33,26 @@ def enforce_selection(last_error: str | None = None) -> str | None:
         return None
 
     target = f"{country}/{city}" if city else country
+    downloads_state = jdown_downloads_suspend()
     ok, message = gluetun_set_server_selection(country, city)
     if ok:
         log(f"Re-applied saved VPN server '{target}'", PREFIX)
+        if gluetun_wait_connected():
+            jdown_downloads_resume(downloads_state)
+        else:
+            _remember_downloads(downloads_state)
         return None
+    jdown_downloads_resume(downloads_state)
     error = f"Could not apply saved VPN server '{target}': {message}"
     if error != last_error:
         log(error, PREFIX, "error")
     return error
+
+
+def _remember_downloads(state: str | None):
+    """Keep a stopped downloads state until check_tunnel() sees a tunnel again."""
+    if state:
+        config.patch_config({"vpn_resume_downloads": state})
 
 
 def check_tunnel(down_since: float | None) -> float | None:
@@ -52,6 +65,10 @@ def check_tunnel(down_since: float | None) -> float | None:
     if gluetun_get_connection():
         if down_since is not None:
             log("VPN connection is back", PREFIX)
+        pending = config.get_config("vpn_resume_downloads")
+        if pending:
+            config.patch_config({"vpn_resume_downloads": ""})
+            jdown_downloads_resume(pending)
         return None
 
     now = time.monotonic()
@@ -60,6 +77,7 @@ def check_tunnel(down_since: float | None) -> float | None:
     if now - down_since < STUCK_AFTER:
         return down_since
     log(f"No VPN connection for {int(now - down_since)}s, reconnecting to another server", PREFIX, "warning")
+    _remember_downloads(jdown_downloads_suspend())
     gluetun_restart_vpn()
     return now
 

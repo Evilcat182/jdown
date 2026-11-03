@@ -659,7 +659,8 @@
         .then(r => r.json())
         .then(data => {
           if (!data.ok) throw new Error(data.error || 'Server not switched');
-          showToast(`Connected to ${target}, IP ${data.public_ip.public_ip}`, 'ok');
+          const resumed = data.downloads ? ', downloads resumed' : '';
+          showToast(`Connected to ${target}, IP ${data.public_ip.public_ip}${resumed}`, 'ok');
         })
         .catch(err => {
           showToast('Server not switched', 'err');

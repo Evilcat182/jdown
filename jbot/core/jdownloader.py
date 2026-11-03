@@ -6,6 +6,10 @@ from .logger import log
 
 PREFIX = "[JDownloader]"
 
+# Download controller states that hold open connections
+_ACTIVE_STATES = {"RUNNING", "PAUSE"}
+SUSPEND_TIMEOUT = 30  # seconds to wait for the controller to stop
+
 _PACKAGES_QUERY = {
     "availableOfflineCount":      True,
     "availableOnlineCount":       True,
@@ -347,6 +351,50 @@ def jdown_downloads_stop() -> bool:
     result = response_data(res, ctx, False)
     log("Download controller stopped", PREFIX)
     return bool(result)
+
+
+def jdown_downloads_pause(value: bool) -> bool:
+    ctx = "downloadcontroller/pause"
+    try:
+        res = requests.post(
+            f"{config.get_config('api_base_url')}/{ctx}",
+            params=[("", json.dumps(value))],
+            timeout=config.get_config("request_timeout_seconds"),
+        )
+    except requests.RequestException as exc:
+        log(f"Could not set download pause to {value}: {exc}", PREFIX, "error")
+        return False
+    return bool(response_data(res, ctx, False))
+
+
+def jdown_downloads_suspend() -> str | None:
+    """Stop the download controller if it is running or paused, e.g. before the
+    VPN reconnects. Returns the state to hand to jdown_downloads_resume(),
+    or None if there was nothing to stop."""
+    state = jdown_downloads_get_state()
+    if state not in _ACTIVE_STATES:
+        return None
+    log(f"Stopping downloads (state {state})", PREFIX)
+    jdown_downloads_stop()
+    deadline = time.monotonic() + SUSPEND_TIMEOUT
+    while time.monotonic() < deadline:
+        if jdown_downloads_get_state() not in _ACTIVE_STATES | {"STOPPING"}:
+            break
+        time.sleep(1)
+    else:
+        log(f"Downloads did not stop within {SUSPEND_TIMEOUT}s", PREFIX, "warning")
+    return state
+
+
+def jdown_downloads_resume(state: str | None) -> bool:
+    """Restore the state returned by jdown_downloads_suspend()."""
+    if state not in _ACTIVE_STATES:
+        return True
+    ok = jdown_downloads_start()
+    if state == "PAUSE":
+        ok = jdown_downloads_pause(True) and ok
+    log(f"Restored downloads state {state}", PREFIX)
+    return ok
 
 
 def jdown_package_set_enabled(package_uuid: int, enabled: bool) -> bool:

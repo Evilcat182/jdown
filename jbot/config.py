@@ -67,6 +67,8 @@ _SCHEMA = {
     # ── VPN server selection (set via the VPN section, re-applied to gluetun) ─
     "vpn_country":              {"default": "", "env": None, "type": str, "ui": False},
     "vpn_city":                 {"default": "", "env": None, "type": str, "ui": False},
+    # Downloads state to restore once the VPN is connected again (set when a switch failed)
+    "vpn_resume_downloads":     {"default": "", "env": None, "type": str, "ui": False},
 
     # ── Internal / secrets (env-only, not shown in UI) ──────────────────────
     "gluetun_api_url":          {"default": "http://gluetun:8000",    "env": "GLUETUN_API_URL",          "type": str,  "ui": False},

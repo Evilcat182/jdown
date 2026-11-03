@@ -173,6 +173,8 @@ def api_downloads_start():
 @app.route("/api/downloads/stop", methods=["POST"])
 def api_downloads_stop():
     from core.jdownloader import jdown_downloads_stop
+    # A manual stop wins over a restore pending from a failed VPN switch
+    config.patch_config({"vpn_resume_downloads": ""})
     return jsonify({"ok": jdown_downloads_stop()})
 
 
@@ -321,12 +323,18 @@ def _switch_vpn(country: str, city: str, settings: dict):
         gluetun_set_server_selection, gluetun_wait_connected, gluetun_restart_vpn,
         CONNECT_TIMEOUT, CONNECT_ATTEMPTS,
     )
+    from core.jdownloader import jdown_downloads_suspend, jdown_downloads_resume
     selection = (settings.get("provider") or {}).get("server_selection") or {}
     previous = ((selection.get("countries") or [""])[0], (selection.get("cities") or [""])[0])
     target = f"{country}/{city}" if city else country
 
+    # Running downloads lose their connections when the tunnel goes down,
+    # so stop them first and restore the state once a tunnel is up again
+    downloads_state = jdown_downloads_suspend()
+
     ok, message = gluetun_set_server_selection(country, city)
     if not ok:
+        jdown_downloads_resume(downloads_state)
         return jsonify({"ok": False, "error": message}), 502
 
     # OpenVPN retries a dead or rejecting server forever, so after each attempt
@@ -342,7 +350,8 @@ def _switch_vpn(country: str, city: str, settings: dict):
         # Persist only once it works, the VPN watcher re-applies it after restarts
         config.patch_config({"vpn_country": country, "vpn_city": city})
         log(f"VPN server changed to '{target}' (IP {info.get('public_ip')})", PREFIX)
-        return jsonify({"ok": True, "message": message, "public_ip": info})
+        jdown_downloads_resume(downloads_state)
+        return jsonify({"ok": True, "message": message, "public_ip": info, "downloads": downloads_state})
 
     error = f"No VPN connection to '{target}' after trying {CONNECT_ATTEMPTS} servers"
     if previous[0]:
@@ -350,6 +359,15 @@ def _switch_vpn(country: str, city: str, settings: dict):
         log(f"{error}, switching back to '{back}'", PREFIX, "warning")
         gluetun_set_server_selection(*previous)
         error += f", switched back to '{back}'"
+        # Only restart downloads once the previous server is connected again
+        if downloads_state and gluetun_wait_connected(CONNECT_TIMEOUT):
+            jdown_downloads_resume(downloads_state)
+            downloads_state = None
     else:
         log(error, PREFIX, "warning")
+    if downloads_state:
+        # The VPN watcher restores it once a tunnel is up again
+        config.patch_config({"vpn_resume_downloads": downloads_state})
+        error += ". Downloads restart once the VPN is connected"
+        log("Downloads stay stopped until the VPN is connected", PREFIX, "warning")
     return jsonify({"ok": False, "error": error + ". Check the gluetun logs."}), 504
